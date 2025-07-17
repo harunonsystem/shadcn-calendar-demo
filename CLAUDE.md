@@ -60,3 +60,42 @@ When creating new components, follow the existing patterns:
 - Use TypeScript interfaces from `@/types/` for type safety
 - Follow Japanese localization for user-facing text
 - Use Lucide React icons for consistency
+
+## Git Workflow
+
+### Feature Branch Development
+```bash
+# Create feature branch from develop
+git checkout develop
+git checkout -b feature/your-feature-name
+
+# Make changes and commit
+git add .
+git commit -m "feat: description of changes
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+# Push to remote (if remote is configured)
+git push -u origin feature/your-feature-name
+
+# Create pull request from feature branch to develop
+# Use GitHub CLI or web interface
+gh pr create --title "Feature: Your Feature Name" --body "Description of changes"
+```
+
+### Branch Management
+- **develop**: Main development branch
+- **feature/***: Feature branches created from develop
+- **main**: Production branch (if applicable)
+
+### Commit Message Format
+Follow conventional commits with Claude Code attribution:
+- `feat:` for new features
+- `fix:` for bug fixes  
+- `docs:` for documentation changes
+- `refactor:` for code refactoring
+- `test:` for adding tests
+
+Always include Claude Code attribution in commit messages.
