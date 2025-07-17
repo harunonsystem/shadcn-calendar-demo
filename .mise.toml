@@ -1,0 +1,5 @@
+[tools]
+bun = "latest"
+
+[settings]
+legacy_version_file = false
