@@ -18,23 +18,26 @@ export const createDate = (dayOffset: number, hours: number, minutes: number = 0
   return date
 }
 
-const categoryColors = [
+/**
+ * event category and colro of background and border setting
+ */
+export const categoryColors = [
   {
     category: '仕事',
     label: '仕事',
-    borderColor: '#ccc',
+    borderColor: '#9a4a4aff',
     backgroundColor: '#3b82f6',
   },
   {
     category: 'プライベート',
     label: 'プライベート',
-    borderColor: '#ccc',
+    borderColor: '#1f0303ff',
     backgroundColor: '#ef4444',
   },
   {
     category: '健康',
     label: '健康',
-    borderColor: '#ccc',
+    borderColor: '#ccccccff',
     backgroundColor: '#10b981',
   },
   {
@@ -204,26 +207,10 @@ export const allDayEvents: CalendarEvent[] = [
  * 全イベント（デフォルトエクスポート用）
  */
 export const allMockEvents: CalendarEvent[] = [
-  ...workEvents.map((event) => ({
-    ...event,
-    backgroundColor: categoryColors.find((c) => c.category === event.category)?.backgroundColor,
-    borderColor: categoryColors.find((c) => c.category === event.category)?.borderColor,
-  })),
-  ...privateEvents.map((event) => ({
-    ...event,
-    backgroundColor: categoryColors.find((c) => c.category === event.category)?.backgroundColor,
-    borderColor: categoryColors.find((c) => c.category === event.category)?.borderColor,
-  })),
-  ...healthEvents.map((event) => ({
-    ...event,
-    backgroundColor: categoryColors.find((c) => c.category === event.category)?.backgroundColor,
-    borderColor: categoryColors.find((c) => c.category === event.category)?.borderColor,
-  })),
-  ...overlappingEvents.map((event) => ({
-    ...event,
-    backgroundColor: categoryColors.find((c) => c.category === event.category)?.backgroundColor,
-    borderColor: categoryColors.find((c) => c.category === event.category)?.borderColor,
-  })),
+  ...workEvents,
+  ...privateEvents,
+  ...healthEvents,
+  ...overlappingEvents,
   ...allDayEvents,
 ]
 

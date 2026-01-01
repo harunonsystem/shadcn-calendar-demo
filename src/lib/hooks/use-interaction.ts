@@ -13,13 +13,6 @@ import {
   pendingDragAtom,
 } from '@/lib/atoms'
 import { CalendarEvent } from '@/types/calendar'
-import {
-  TIME_SLOT_HEIGHT_PX,
-  TIME_SLOT_INTERVAL_MINUTES,
-  HOURS_PER_DAY,
-  MINUTES_PER_HOUR,
-} from '@/lib/constants'
-import { isSameDay } from '@/lib/utils/date'
 
 export const useInteraction = () => {
   const [dragState, setDragState] = useAtom(dragStateAtom)

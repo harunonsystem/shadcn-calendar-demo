@@ -1,10 +1,10 @@
 import { useAtomValue } from 'jotai'
 import { atomWithStorage } from 'jotai/utils'
-import type { Language } from '@/types/calendar'
 import { translations, type Translations } from './translations'
+import { type Language, defaultLanguage } from './config'
 
 // 言語設定のatom（URLやlocalStorageと同期可能）
-export const languageAtom = atomWithStorage<Language>('calendar-language', 'ja')
+export const languageAtom = atomWithStorage<Language>('calendar-language', defaultLanguage)
 
 /**
  * 現在の言語設定に基づいて翻訳を取得するカスタムフック
@@ -26,6 +26,10 @@ export const getTranslation = (language: Language): Translations => {
   return translations[language] as Translations
 }
 
-// 既存のエクスポートを維持
+// config.tsからの再エクスポート
+export { supportedLanguages, defaultLanguage, isValidLanguage } from './config'
+export type { Language } from './config'
+
+// translations.tsからの再エクスポート
 export { translations, getWeekDayName, getWeekDayLabels } from './translations'
 export type { Translations } from './translations'

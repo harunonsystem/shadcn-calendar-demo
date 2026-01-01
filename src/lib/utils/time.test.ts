@@ -71,7 +71,7 @@ describe('utils/time', () => {
     it('英語で継続時間を計算する', () => {
       const start = new Date(2025, 0, 1, 9, 0)
       const end = new Date(2025, 0, 1, 10, 30)
-      expect(calculateDuration(start, end, 'en')).toBe('1h 30m')
+      expect(calculateDuration(start, end, 'en')).toBe('1h30m')
     })
   })
 

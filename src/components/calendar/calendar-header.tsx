@@ -2,7 +2,8 @@ import { Button } from '@/components/ui/button'
 import { CardHeader, CardTitle } from '@/components/ui/card'
 import { ChevronLeft, ChevronRight, Plus, List } from 'lucide-react'
 import { ViewMode, Language } from '@/types/calendar'
-import { translations, getTitle } from './calendar-utils'
+import { getTitle } from './calendar-utils'
+import { getTranslation } from '@/lib/i18n'
 
 interface CalendarHeaderProps {
   viewMode: ViewMode
@@ -25,7 +26,7 @@ export function CalendarHeader({
   onTodayClick,
   onCreateEvent,
 }: CalendarHeaderProps) {
-  const t = translations[language]
+  const t = getTranslation(language)
 
   return (
     <CardHeader className="pb-4">

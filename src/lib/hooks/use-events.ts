@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { useAtom, useSetAtom } from 'jotai'
+import { useAtom } from 'jotai'
 import { eventsAtom, configAtom, selectedEventAtom, isEventDetailOpenAtom } from '@/lib/atoms'
 import { CalendarEvent, CalendarConfig } from '@/types/calendar'
 

@@ -1,5 +1,9 @@
+import type { Language } from '@/lib/i18n'
+
 export type ViewMode = 'month' | 'week' | 'day' | 'category'
-export type Language = 'ja' | 'en'
+
+// Language型は@/lib/i18n/config.tsで定義され、ここで再エクスポート
+export type { Language } from '@/lib/i18n'
 
 export interface CalendarEvent {
   id: string

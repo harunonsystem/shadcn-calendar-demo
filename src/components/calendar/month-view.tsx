@@ -1,10 +1,11 @@
 import { useAtomValue } from 'jotai'
 import { Badge } from '@/components/ui/badge'
 import { CalendarEvent, CalendarConfig, Language } from '@/types/calendar'
-import { getMonthDays, isToday, isSameDay } from '@/lib/utils/date'
+import { getMonthDays, isToday } from '@/lib/utils/date'
 import { getEventsForDate } from '@/lib/utils/event'
 import { cn } from '@/lib/utils'
-import { translations, getEventStyle, getWeekDayLabels } from './calendar-utils'
+import { getEventStyle, getWeekDayLabels } from './calendar-utils'
+import { getTranslation } from '@/lib/i18n'
 import { getMonthEventTitle } from '@/lib/utils/time'
 import { currentDateAtom, eventsAtom, configAtom } from '@/lib/atoms'
 
@@ -34,7 +35,7 @@ export function MonthView({
   const events = propEvents ?? atomEvents
   const config = propConfig ?? atomConfig
 
-  const t = translations[language]
+  const t = getTranslation(language)
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
   const monthDays = getMonthDays(year, month)

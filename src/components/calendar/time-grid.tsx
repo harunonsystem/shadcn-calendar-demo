@@ -61,7 +61,7 @@ export function TimeGrid({
   })
 
   const [isDragStarted, setIsDragStarted] = useState(false)
-  const [mouseDownTime, setMouseDownTime] = useState(0)
+  const [_mouseDownTime, setMouseDownTime] = useState(0)
   const [mouseDownPosition, setMouseDownPosition] = useState({ x: 0, y: 0 })
 
   const [resizeState, setResizeState] = useState<EventResizeState>({
@@ -468,12 +468,7 @@ export function TimeGrid({
       )}
 
       {/* All-day events row (Google Calendar style) */}
-      <AllDayRow
-        dates={dates}
-        events={events}
-        language={language}
-        onEventClick={onEventClick}
-      />
+      <AllDayRow dates={dates} events={events} language={language} onEventClick={onEventClick} />
 
       {/* Time grid */}
       <div className="flex-1 overflow-y-auto">
@@ -700,7 +695,7 @@ export function TimeGrid({
           setPopoverState({ isOpen: false, event: null, position: { x: 0, y: 0 } })
           onEventClick?.(event)
         }}
-        onDelete={(event) => {
+        onDelete={(_event) => {
           setPopoverState({ isOpen: false, event: null, position: { x: 0, y: 0 } })
           // TODO: 削除処理を呼び出し
         }}

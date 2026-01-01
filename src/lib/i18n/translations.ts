@@ -1,4 +1,4 @@
-import type { Language } from '@/types/calendar'
+import type { Language } from './config'
 
 /**
  * カレンダー全体の翻訳定義
