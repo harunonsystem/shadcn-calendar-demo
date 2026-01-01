@@ -14,9 +14,7 @@ export interface TimeSlot {
 export function generateTimeSlots(): TimeSlot[] {
   const hours = Array.from({ length: HOURS_PER_DAY }, (_, i) => i)
   return hours.flatMap((hour) => {
-    const slots: TimeSlot[] = [
-      { hour, minute: 0, label: `${hour}`, isMainHour: true },
-    ]
+    const slots: TimeSlot[] = [{ hour, minute: 0, label: `${hour}`, isMainHour: true }]
 
     // 30分インターバルの場合は30分スロットを追加
     if (TIME_SLOT_INTERVAL_MINUTES <= 30) {

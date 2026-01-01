@@ -3,6 +3,11 @@ import { cn } from '@/lib/utils'
 import { getEventStyle } from './calendar-utils'
 import { getTimeGridEventInfo } from '@/lib/utils/time'
 
+interface ResizePreview {
+  top: number
+  height: number
+}
+
 interface TimeGridEventProps {
   event: CalendarEvent
   config: CalendarConfig
@@ -12,6 +17,7 @@ interface TimeGridEventProps {
   isDragging: boolean
   isResizing: boolean
   isDragStarted: boolean
+  resizePreview?: ResizePreview | null
   onMouseDown: (e: React.MouseEvent, event: CalendarEvent, handle?: 'top' | 'bottom') => void
   onClick: (e: React.MouseEvent, event: CalendarEvent) => void
 }
@@ -28,21 +34,26 @@ export function TimeGridEvent({
   isDragging,
   isResizing,
   isDragStarted,
+  resizePreview,
   onMouseDown,
   onClick,
 }: TimeGridEventProps) {
   const { position, displayInfo, timeRange } = getTimeGridEventInfo(event)
+
+  // リサイズ中はプレビューの位置/高さを使用
+  const displayTop = isResizing && resizePreview ? resizePreview.top : position.top
+  const displayHeight = isResizing && resizePreview ? resizePreview.height : position.height
 
   return (
     <div
       className={cn(
         'absolute px-1 py-0.5 text-xs rounded cursor-move group transition-all hover:z-50 hover:shadow-lg',
         isDragging && 'opacity-50 shadow-lg border-2 border-blue-500',
-        isResizing && 'opacity-70 shadow-md z-50',
+        isResizing && 'opacity-60 shadow-md z-50',
       )}
       style={{
-        top: position.top,
-        height: position.height,
+        top: displayTop,
+        height: displayHeight,
         left: `${left}%`,
         width: `${width}%`,
         zIndex: isDragging || isResizing ? 50 : zIndex + 10,
@@ -57,7 +68,7 @@ export function TimeGridEvent({
       }}
     >
       {/* Top resize handle */}
-      {config.enableResize && position.height >= 30 && (
+      {config.enableResize && displayHeight >= 30 && (
         <div
           className="absolute -top-1 left-0 right-0 h-3 cursor-n-resize opacity-0 group-hover:opacity-100 transition-opacity"
           onMouseDown={(e) => {
@@ -70,15 +81,13 @@ export function TimeGridEvent({
       {displayInfo.showTitle && (
         <div className="font-semibold text-white truncate">{event.title}</div>
       )}
-      {displayInfo.showTime && (
-        <div className="text-white/90 text-xs truncate">{timeRange}</div>
-      )}
+      {displayInfo.showTime && <div className="text-white/90 text-xs truncate">{timeRange}</div>}
       {displayInfo.showDescription && event.description && (
         <div className="text-white/80 text-xs truncate">{event.description}</div>
       )}
 
       {/* Bottom resize handle */}
-      {config.enableResize && position.height >= 30 && (
+      {config.enableResize && displayHeight >= 30 && (
         <div
           className="absolute -bottom-1 left-0 right-0 h-3 cursor-s-resize opacity-0 group-hover:opacity-100 transition-opacity"
           onMouseDown={(e) => {

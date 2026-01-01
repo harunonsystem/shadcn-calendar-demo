@@ -1,27 +1,15 @@
-import {
-  CalendarEvent,
-  CalendarConfig,
-  Language,
-  EventDragState,
-  EventResizeState,
-} from '@/types/calendar'
+import { CalendarEvent, CalendarConfig, Language } from '@/types/calendar'
 import { isSameDay } from '@/lib/utils/date'
-import { cn } from '@/lib/utils'
 import {
-  calculateEventPosition,
   groupOverlappingEvents,
   calculateOverlapLayout,
   getNowIndicatorPositionForTimeGrid,
 } from '@/lib/utils/time'
 import { generateTimeSlots } from '@/lib/utils/time-slots'
-import {
-  TIME_SLOT_HEIGHT_PX,
-  TIME_SLOT_INTERVAL_MINUTES,
-  MINUTES_PER_HOUR,
-  HOURS_PER_DAY,
-} from '@/lib/constants'
+import { TIME_SLOT_HEIGHT_PX, TIME_SLOT_INTERVAL_MINUTES } from '@/lib/constants'
 import { getTranslation } from '@/lib/i18n'
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { useTimeGridInteraction } from '@/lib/hooks/use-time-grid-interaction'
 import { EventResizeModal } from './event-resize-modal'
 import { EventMoveModal } from './event-move-modal'
 import { EventPopover } from './event-popover'
@@ -56,50 +44,20 @@ export function TimeGrid({
   onEventResize,
   showDayHeaders = true,
 }: TimeGridProps) {
-  const [dragState, setDragState] = useState<EventDragState>({
-    isDragging: false,
-    draggedEvent: null,
-    dragOffset: { x: 0, y: 0 },
-    originalDate: new Date(),
+  const gridRef = useRef<HTMLDivElement>(null)
+
+  // カスタムフックでドラッグ/リサイズ/ポップオーバーを管理
+  const { state, handlers, modalHandlers, actions } = useTimeGridInteraction({
+    dates,
+    config,
+    gridRef,
+    onEventDrop,
+    onEventResize,
   })
-
-  const [isDragStarted, setIsDragStarted] = useState(false)
-  const [_mouseDownTime, setMouseDownTime] = useState(0)
-  const [mouseDownPosition, setMouseDownPosition] = useState({ x: 0, y: 0 })
-
-  const [resizeState, setResizeState] = useState<EventResizeState>({
-    isResizing: false,
-    resizedEvent: null,
-    resizeHandle: null,
-    originalHeight: 0,
-  })
-
-  const [showResizeModal, setShowResizeModal] = useState(false)
-  const [pendingResize, setPendingResize] = useState<{
-    event: CalendarEvent
-    newStartTime: number
-    newEndTime: number
-  } | null>(null)
-
-  // ドラッグ確認モーダル用
-  const [showDragModal, setShowDragModal] = useState(false)
-  const [pendingDrag, setPendingDrag] = useState<{
-    event: CalendarEvent
-    newDate: Date
-    newStartMinutes: number
-  } | null>(null)
-
-  // ドラッグプレビュー用
-  const [dragPreview, setDragPreview] = useState<{
-    columnIndex: number
-    startMinutes: number
-    height: number
-  } | null>(null)
 
   // Now Indicator
   const [nowIndicatorPos, setNowIndicatorPos] = useState(getNowIndicatorPositionForTimeGrid())
 
-  // Now Indicatorの更新（毎分）
   useEffect(() => {
     if (!config.showNowIndicator) return
 
@@ -107,334 +65,11 @@ export function TimeGrid({
       setNowIndicatorPos(getNowIndicatorPositionForTimeGrid())
     }
 
-    // 毎分更新
     const interval = setInterval(updateNowIndicator, 60000)
     return () => clearInterval(interval)
   }, [config.showNowIndicator])
 
-  // イベントポップオーバー用
-  const [popoverState, setPopoverState] = useState<{
-    isOpen: boolean
-    event: CalendarEvent | null
-    position: { x: number; y: number }
-  }>({
-    isOpen: false,
-    event: null,
-    position: { x: 0, y: 0 },
-  })
-
-  const gridRef = useRef<HTMLDivElement>(null)
-
-  // ドラッグ開始
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent, event: CalendarEvent, handle?: 'top' | 'bottom') => {
-      e.preventDefault()
-      e.stopPropagation()
-
-      // ドラッグ/リサイズ開始時にpopoverを閉じる
-      setPopoverState({ isOpen: false, event: null, position: { x: 0, y: 0 } })
-
-      // マウスダウンの時間と位置を記録
-      setMouseDownTime(Date.now())
-      setMouseDownPosition({ x: e.clientX, y: e.clientY })
-      setIsDragStarted(false)
-
-      if (handle) {
-        // リサイズ開始
-        const position = calculateEventPosition(event)
-        setResizeState({
-          isResizing: true,
-          resizedEvent: event,
-          resizeHandle: handle,
-          originalHeight: position.height,
-        })
-      } else {
-        // ドラッグ準備（まだ実際のドラッグではない）
-        const rect = e.currentTarget.getBoundingClientRect()
-        setDragState({
-          isDragging: false, // まだドラッグ状態ではない
-          draggedEvent: event,
-          dragOffset: {
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top,
-          },
-          originalDate: new Date(event.startDate),
-        })
-      }
-    },
-    [],
-  )
-
-  // マウス移動
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      // ドラッグ状態でない場合、移動距離をチェックしてドラッグ開始を判定
-      if (dragState.draggedEvent && !dragState.isDragging && !isDragStarted) {
-        const distance = Math.sqrt(
-          Math.pow(e.clientX - mouseDownPosition.x, 2) +
-            Math.pow(e.clientY - mouseDownPosition.y, 2),
-        )
-
-        // 5px以上移動したらドラッグ開始
-        if (distance > 5) {
-          setDragState((prev) => ({ ...prev, isDragging: true }))
-          setIsDragStarted(true)
-        }
-      }
-
-      if (dragState.isDragging && dragState.draggedEvent && gridRef.current) {
-        // ドラッグ中の処理 - プレビュー表示
-        const gridRect = gridRef.current.getBoundingClientRect()
-        const columnWidth = gridRect.width / dates.length
-        const columnIndex = Math.floor((e.clientX - gridRect.left) / columnWidth)
-        const clampedColumnIndex = Math.max(0, Math.min(columnIndex, dates.length - 1))
-
-        // Y位置から新しい開始時間を計算
-        const yPosition = e.clientY - gridRect.top
-        const rawMinutes = (yPosition / TIME_SLOT_HEIGHT_PX) * TIME_SLOT_INTERVAL_MINUTES
-        const snappedMinutes = Math.max(
-          0,
-          Math.min(
-            Math.round(rawMinutes / TIME_SLOT_INTERVAL_MINUTES) * TIME_SLOT_INTERVAL_MINUTES,
-            HOURS_PER_DAY * MINUTES_PER_HOUR - TIME_SLOT_INTERVAL_MINUTES,
-          ),
-        )
-
-        // イベントの高さ（継続時間）を取得
-        const eventDuration =
-          (new Date(dragState.draggedEvent.endDate).getTime() -
-            new Date(dragState.draggedEvent.startDate).getTime()) /
-          (1000 * 60)
-        const previewHeight = (eventDuration / TIME_SLOT_INTERVAL_MINUTES) * TIME_SLOT_HEIGHT_PX
-
-        // プレビューを更新
-        setDragPreview({
-          columnIndex: clampedColumnIndex,
-          startMinutes: snappedMinutes,
-          height: previewHeight,
-        })
-
-        // ドラッグ状態を更新
-        setDragState((prev) => ({
-          ...prev,
-          dragOffset: {
-            x: e.clientX - gridRect.left,
-            y: e.clientY - gridRect.top,
-          },
-        }))
-      }
-
-      if (resizeState.isResizing && gridRef.current) {
-        // リサイズ中の処理 - プレビュー表示
-        // 視覚的なフィードバックは CSS で処理し、実際の時間計算は mouseUp 時に行う
-      }
-    },
-    [
-      dragState.isDragging,
-      dragState.draggedEvent,
-      isDragStarted,
-      mouseDownPosition,
-      resizeState.isResizing,
-      resizeState.resizedEvent,
-      resizeState.resizeHandle,
-      dates,
-    ],
-  )
-
-  // マウスリリース
-  const handleMouseUp = useCallback(
-    (e: React.MouseEvent) => {
-      if (dragState.isDragging && dragState.draggedEvent && gridRef.current) {
-        const gridRect = gridRef.current.getBoundingClientRect()
-        const columnWidth = gridRect.width / dates.length
-        const columnIndex = Math.floor((e.clientX - gridRect.left) / columnWidth)
-        const newDate = dates[Math.max(0, Math.min(columnIndex, dates.length - 1))]
-
-        // Y位置から新しい開始時間を計算
-        const yPosition = e.clientY - gridRect.top
-        const rawMinutes = (yPosition / TIME_SLOT_HEIGHT_PX) * TIME_SLOT_INTERVAL_MINUTES
-        const newStartMinutes = Math.max(
-          0,
-          Math.min(
-            Math.round(rawMinutes / TIME_SLOT_INTERVAL_MINUTES) * TIME_SLOT_INTERVAL_MINUTES,
-            HOURS_PER_DAY * MINUTES_PER_HOUR - TIME_SLOT_INTERVAL_MINUTES,
-          ),
-        )
-
-        if (onEventDrop && newDate) {
-          // 元の位置と比較して変更があるかチェック
-          const originalStart = new Date(dragState.draggedEvent.startDate)
-          const originalStartMinutes = originalStart.getHours() * 60 + originalStart.getMinutes()
-          const isSamePosition =
-            isSameDay(originalStart, newDate) && originalStartMinutes === newStartMinutes
-
-          // 位置が変わっていない場合は何もしない
-          if (isSamePosition) {
-            // スキップ - 元の位置に戻った
-          } else if (config.quickDragDrop !== false) {
-            // 即座に移動
-            onEventDrop(dragState.draggedEvent, newDate, newStartMinutes)
-          } else {
-            // モーダルで確認
-            setPendingDrag({
-              event: dragState.draggedEvent,
-              newDate,
-              newStartMinutes,
-            })
-            setShowDragModal(true)
-          }
-        }
-      }
-
-      if (resizeState.isResizing && resizeState.resizedEvent && gridRef.current) {
-        const gridRect = gridRef.current.getBoundingClientRect()
-        const yPosition = Math.max(0, e.clientY - gridRect.top)
-        const rawMinutes = (yPosition / TIME_SLOT_HEIGHT_PX) * TIME_SLOT_INTERVAL_MINUTES
-        const newTimeMinutes =
-          Math.round(rawMinutes / TIME_SLOT_INTERVAL_MINUTES) * TIME_SLOT_INTERVAL_MINUTES
-
-        const startMinutes =
-          new Date(resizeState.resizedEvent.startDate).getHours() * 60 +
-          new Date(resizeState.resizedEvent.startDate).getMinutes()
-        const endMinutes =
-          new Date(resizeState.resizedEvent.endDate).getHours() * 60 +
-          new Date(resizeState.resizedEvent.endDate).getMinutes()
-
-        let newStartTime = startMinutes
-        let newEndTime = endMinutes
-
-        if (resizeState.resizeHandle === 'top') {
-          // 上端をドラッグ: 開始時間を変更、終了時間は固定
-          newStartTime = Math.min(newTimeMinutes, endMinutes - 30)
-          newStartTime = Math.max(0, newStartTime) // 0時より前にはできない
-        } else if (resizeState.resizeHandle === 'bottom') {
-          // 下端をドラッグ: 終了時間を変更、開始時間は固定
-          newEndTime = Math.max(newTimeMinutes, startMinutes + TIME_SLOT_INTERVAL_MINUTES)
-          newEndTime = Math.min(HOURS_PER_DAY * MINUTES_PER_HOUR, newEndTime)
-        }
-
-        if (newStartTime !== startMinutes || newEndTime !== endMinutes) {
-          if (config.quickResize) {
-            // 即座に変更
-            onEventResize?.(resizeState.resizedEvent, newStartTime, newEndTime)
-          } else {
-            // モーダルで確認
-            setPendingResize({
-              event: resizeState.resizedEvent,
-              newStartTime,
-              newEndTime,
-            })
-            setShowResizeModal(true)
-          }
-        }
-      }
-
-      setDragState({
-        isDragging: false,
-        draggedEvent: null,
-        dragOffset: { x: 0, y: 0 },
-        originalDate: new Date(),
-      })
-
-      setResizeState({
-        isResizing: false,
-        resizedEvent: null,
-        resizeHandle: null,
-        originalHeight: 0,
-      })
-
-      // ドラッグ関連の状態をリセット
-      setIsDragStarted(false)
-      setMouseDownTime(0)
-      setMouseDownPosition({ x: 0, y: 0 })
-      setDragPreview(null)
-    },
-    [dragState, resizeState, dates, onEventDrop, onEventResize, config.quickResize],
-  )
-
-  // モーダルハンドラー
-  const handleResizeConfirm = useCallback(() => {
-    if (pendingResize && onEventResize) {
-      onEventResize(pendingResize.event, pendingResize.newStartTime, pendingResize.newEndTime)
-    }
-    setShowResizeModal(false)
-    setPendingResize(null)
-  }, [pendingResize, onEventResize])
-
-  const handleResizeCancel = useCallback(() => {
-    setShowResizeModal(false)
-    setPendingResize(null)
-  }, [])
-
-  // ドラッグ確認モーダルハンドラー
-  const handleDragConfirm = useCallback(() => {
-    if (pendingDrag && onEventDrop) {
-      onEventDrop(pendingDrag.event, pendingDrag.newDate, pendingDrag.newStartMinutes)
-    }
-    setShowDragModal(false)
-    setPendingDrag(null)
-  }, [pendingDrag, onEventDrop])
-
-  const handleDragCancel = useCallback(() => {
-    setShowDragModal(false)
-    setPendingDrag(null)
-  }, [])
-
-  // グローバルマウスイベントリスナー
-  useEffect(() => {
-    const handleGlobalMouseMove = (e: MouseEvent) => {
-      if (dragState.isDragging || resizeState.isResizing) {
-        // React MouseEventと同じ形式に変換
-        const syntheticEvent = {
-          clientX: e.clientX,
-          clientY: e.clientY,
-          stopPropagation: () => e.stopPropagation(),
-          preventDefault: () => e.preventDefault(),
-        } as React.MouseEvent
-
-        handleMouseMove(syntheticEvent)
-      }
-    }
-
-    const handleGlobalMouseUp = (e: MouseEvent) => {
-      if (dragState.isDragging || resizeState.isResizing) {
-        const syntheticEvent = {
-          clientX: e.clientX,
-          clientY: e.clientY,
-          stopPropagation: () => e.stopPropagation(),
-          preventDefault: () => e.preventDefault(),
-        } as React.MouseEvent
-
-        handleMouseUp(syntheticEvent)
-      }
-    }
-
-    if (dragState.isDragging || resizeState.isResizing) {
-      document.addEventListener('mousemove', handleGlobalMouseMove)
-      document.addEventListener('mouseup', handleGlobalMouseUp)
-      document.body.style.cursor = dragState.isDragging
-        ? 'grabbing'
-        : resizeState.resizeHandle === 'top'
-          ? 'n-resize'
-          : resizeState.resizeHandle === 'bottom'
-            ? 's-resize'
-            : 'default'
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleGlobalMouseMove)
-      document.removeEventListener('mouseup', handleGlobalMouseUp)
-      document.body.style.cursor = 'default'
-    }
-  }, [
-    dragState.isDragging,
-    resizeState.isResizing,
-    handleMouseMove,
-    handleMouseUp,
-    resizeState.resizeHandle,
-  ])
-
-  // 24時間全体を表示
+  // タイムスロット生成
   const timeSlots = generateTimeSlots()
 
   const t = getTranslation(language)
@@ -466,31 +101,29 @@ export function TimeGrid({
         </div>
       )}
 
-      {/* All-day events row (Google Calendar style) */}
+      {/* All-day events row */}
       <AllDayRow
         dates={dates}
         events={events}
         language={language}
         onEventClick={(event, position) => {
-          setPopoverState({ isOpen: true, event, position })
+          actions.openPopover(event, position)
+        }}
+        onEventDrop={(event, newDate) => {
+          // 終日イベントの移動: 開始時刻を0:00として渡す
+          onEventDrop?.(event, newDate, 0)
         }}
       />
 
       {/* Time grid */}
-      <div className="flex-1 overflow-y-auto">
-        <div
-          className="grid grid-cols-[60px_1fr]"
-          style={{ minHeight: `${timeSlots.length * 24}px` }}
-        >
+      <div className="flex-1 overflow-auto">
+        <div className="grid grid-cols-[60px_1fr] min-h-full">
           {/* Time labels */}
-          <div className="border-r bg-gray-50/50">
+          <div className="relative">
             {timeSlots.map((slot) => (
               <div
                 key={`${slot.hour}-${slot.minute}`}
-                className={cn(
-                  'h-6 text-xs text-right pr-3 relative',
-                  slot.isMainHour ? 'text-gray-600 font-medium' : '',
-                )}
+                className="relative h-6 text-xs text-right pr-2"
               >
                 {slot.isMainHour && (
                   <>
@@ -512,13 +145,13 @@ export function TimeGrid({
             ref={gridRef}
             className="grid gap-0 relative"
             style={{ gridTemplateColumns: `repeat(${dates.length}, 1fr)` }}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
+            onMouseMove={handlers.handleMouseMove}
+            onMouseUp={handlers.handleMouseUp}
+            onMouseLeave={handlers.handleMouseUp}
           >
             {dates.map((date, dateIndex) => (
               <div key={date.toISOString()} className="border-r last:border-r-0 relative">
-                {/* Time slots - 各スロット24px高さ */}
+                {/* Time slots */}
                 {timeSlots.map((slot) => (
                   <div
                     key={`${slot.hour}-${slot.minute}`}
@@ -535,21 +168,23 @@ export function TimeGrid({
                 ))}
 
                 {/* Drag Preview */}
-                {dragPreview && dragPreview.columnIndex === dateIndex && dragState.draggedEvent && (
-                  <div
-                    className="absolute left-1 right-1 rounded pointer-events-none opacity-50 border-2 border-dashed"
-                    style={{
-                      top:
-                        (dragPreview.startMinutes / TIME_SLOT_INTERVAL_MINUTES) *
-                        TIME_SLOT_HEIGHT_PX,
-                      height: dragPreview.height,
-                      backgroundColor: dragState.draggedEvent.backgroundColor || '#3b82f6',
-                      borderColor: dragState.draggedEvent.borderColor || '#1d4ed8',
-                    }}
-                  />
-                )}
+                {state.dragPreview &&
+                  state.dragPreview.columnIndex === dateIndex &&
+                  state.dragState.draggedEvent && (
+                    <div
+                      className="absolute left-1 right-1 rounded pointer-events-none opacity-50 border-2 border-dashed"
+                      style={{
+                        top:
+                          (state.dragPreview.startMinutes / TIME_SLOT_INTERVAL_MINUTES) *
+                          TIME_SLOT_HEIGHT_PX,
+                        height: state.dragPreview.height,
+                        backgroundColor: state.dragState.draggedEvent.backgroundColor || '#3b82f6',
+                        borderColor: state.dragState.draggedEvent.borderColor || '#1d4ed8',
+                      }}
+                    />
+                  )}
 
-                {/* Now Indicator - 今日の列にのみ表示 */}
+                {/* Now Indicator */}
                 <NowIndicator date={date} position={nowIndicatorPos} config={config} />
 
                 {/* Events */}
@@ -564,9 +199,10 @@ export function TimeGrid({
 
                     return layouts.map(({ event, width, left, zIndex }) => {
                       const isDragging =
-                        dragState.isDragging && dragState.draggedEvent?.id === event.id
+                        state.dragState.isDragging && state.dragState.draggedEvent?.id === event.id
                       const isResizing =
-                        resizeState.isResizing && resizeState.resizedEvent?.id === event.id
+                        state.resizeState.isResizing &&
+                        state.resizeState.resizedEvent?.id === event.id
 
                       return (
                         <TimeGridEvent
@@ -578,17 +214,18 @@ export function TimeGrid({
                           zIndex={zIndex}
                           isDragging={isDragging}
                           isResizing={isResizing}
-                          isDragStarted={isDragStarted}
-                          onMouseDown={handleMouseDown}
+                          isDragStarted={state.isDragStarted}
+                          resizePreview={
+                            isResizing && state.resizePreview?.eventId === event.id
+                              ? { top: state.resizePreview.top, height: state.resizePreview.height }
+                              : null
+                          }
+                          onMouseDown={handlers.handleMouseDown}
                           onClick={(e, clickedEvent) => {
                             const rect = e.currentTarget.getBoundingClientRect()
-                            setPopoverState({
-                              isOpen: true,
-                              event: clickedEvent,
-                              position: {
-                                x: rect.right + 8,
-                                y: rect.top,
-                              },
+                            actions.openPopover(clickedEvent, {
+                              x: rect.right + 8,
+                              y: rect.top,
                             })
                           }}
                         />
@@ -604,43 +241,43 @@ export function TimeGrid({
 
       {/* Resize confirmation modal */}
       <EventResizeModal
-        event={pendingResize?.event || null}
+        event={state.pendingResize?.event || null}
         language={language}
-        isOpen={showResizeModal}
-        newStartTime={pendingResize?.newStartTime || 0}
-        newEndTime={pendingResize?.newEndTime || 0}
-        onConfirm={handleResizeConfirm}
-        onCancel={handleResizeCancel}
+        isOpen={state.showResizeModal}
+        newStartTime={state.pendingResize?.newStartTime || 0}
+        newEndTime={state.pendingResize?.newEndTime || 0}
+        onConfirm={modalHandlers.handleResizeConfirm}
+        onCancel={modalHandlers.handleResizeCancel}
       />
 
       {/* Drag confirmation modal */}
       <EventMoveModal
-        event={pendingDrag?.event || null}
+        event={state.pendingDrag?.event || null}
         language={language}
-        isOpen={showDragModal}
-        newDate={pendingDrag?.newDate || null}
-        newStartMinutes={pendingDrag?.newStartMinutes || 0}
-        onConfirm={handleDragConfirm}
-        onCancel={handleDragCancel}
+        isOpen={state.showDragModal}
+        newDate={state.pendingDrag?.newDate || null}
+        newStartMinutes={state.pendingDrag?.newStartMinutes || 0}
+        onConfirm={modalHandlers.handleDragConfirm}
+        onCancel={modalHandlers.handleDragCancel}
       />
 
       {/* Event popover */}
       <EventPopover
-        event={popoverState.event}
+        event={state.popoverState.event}
         language={language}
-        isOpen={popoverState.isOpen}
-        position={popoverState.position}
-        onClose={() => setPopoverState({ isOpen: false, event: null, position: { x: 0, y: 0 } })}
+        isOpen={state.popoverState.isOpen}
+        position={state.popoverState.position}
+        onClose={actions.closePopover}
         onEdit={(event) => {
-          setPopoverState({ isOpen: false, event: null, position: { x: 0, y: 0 } })
+          actions.closePopover()
           onEventEdit?.(event)
         }}
         onDelete={(_event) => {
-          setPopoverState({ isOpen: false, event: null, position: { x: 0, y: 0 } })
+          actions.closePopover()
           // TODO: 削除処理を呼び出し
         }}
         onOpenDetail={(event) => {
-          setPopoverState({ isOpen: false, event: null, position: { x: 0, y: 0 } })
+          actions.closePopover()
           onEventClick?.(event)
         }}
       />

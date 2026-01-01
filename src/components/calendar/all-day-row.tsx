@@ -1,25 +1,98 @@
 import { CalendarEvent, Language } from '@/types/calendar'
 import { getTranslation } from '@/lib/i18n'
+import { useState, useRef } from 'react'
+import { isSameDay } from '@/lib/utils/date'
+import { cn } from '@/lib/utils'
 
 interface AllDayRowProps {
   dates: Date[]
   events: CalendarEvent[]
   language: Language
   onEventClick?: (event: CalendarEvent, position: { x: number; y: number }) => void
+  onEventDrop?: (event: CalendarEvent, newDate: Date) => void
 }
 
 const MAX_VISIBLE_ALLDAY = 3
 
-export function AllDayRow({ dates, events, language, onEventClick }: AllDayRowProps) {
+export function AllDayRow({ dates, events, language, onEventClick, onEventDrop }: AllDayRowProps) {
   const t = getTranslation(language)
   const allDayEvents = events.filter((e) => e.allDay)
+  const rowRef = useRef<HTMLDivElement>(null)
+
+  // ドラッグ状態
+  const [dragState, setDragState] = useState<{
+    isDragging: boolean
+    draggedEvent: CalendarEvent | null
+    targetColumnIndex: number | null
+  }>({
+    isDragging: false,
+    draggedEvent: null,
+    targetColumnIndex: null,
+  })
 
   if (allDayEvents.length === 0) return null
 
   const handleEventClick = (e: React.MouseEvent, event: CalendarEvent) => {
+    // ドラッグ中はクリックを無視
+    if (dragState.isDragging) return
+
     e.stopPropagation()
     const rect = e.currentTarget.getBoundingClientRect()
     onEventClick?.(event, { x: rect.right + 8, y: rect.top })
+  }
+
+  const handleMouseDown = (e: React.MouseEvent, event: CalendarEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    setDragState({
+      isDragging: true,
+      draggedEvent: event,
+      targetColumnIndex: null,
+    })
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (!rowRef.current) return
+
+      const rect = rowRef.current.getBoundingClientRect()
+      const columnWidth = rect.width / dates.length
+      const x = moveEvent.clientX - rect.left
+      const columnIndex = Math.floor(x / columnWidth)
+      const clampedIndex = Math.max(0, Math.min(columnIndex, dates.length - 1))
+
+      setDragState((prev) => ({
+        ...prev,
+        targetColumnIndex: clampedIndex,
+      }))
+    }
+
+    const handleMouseUp = (upEvent: MouseEvent) => {
+      if (!rowRef.current) {
+        window.removeEventListener('mousemove', handleMouseMove)
+        window.removeEventListener('mouseup', handleMouseUp)
+        setDragState({ isDragging: false, draggedEvent: null, targetColumnIndex: null })
+        return
+      }
+
+      const rect = rowRef.current.getBoundingClientRect()
+      const columnWidth = rect.width / dates.length
+      const x = upEvent.clientX - rect.left
+      const columnIndex = Math.floor(x / columnWidth)
+      const clampedIndex = Math.max(0, Math.min(columnIndex, dates.length - 1))
+      const newDate = dates[clampedIndex]
+
+      // 元の日付と異なる場合のみドロップ
+      if (newDate && !isSameDay(new Date(event.startDate), newDate)) {
+        onEventDrop?.(event, newDate)
+      }
+
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+      setDragState({ isDragging: false, draggedEvent: null, targetColumnIndex: null })
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
   }
 
   return (
@@ -27,8 +100,12 @@ export function AllDayRow({ dates, events, language, onEventClick }: AllDayRowPr
       <div className="p-2 text-xs text-muted-foreground flex items-center justify-end pr-3">
         {t.allDay}
       </div>
-      <div className="grid gap-0" style={{ gridTemplateColumns: `repeat(${dates.length}, 1fr)` }}>
-        {dates.map((date) => {
+      <div
+        ref={rowRef}
+        className="grid gap-0"
+        style={{ gridTemplateColumns: `repeat(${dates.length}, 1fr)` }}
+      >
+        {dates.map((date, dateIndex) => {
           const dayAllDayEvents = allDayEvents.filter((event) => {
             const eventStart = new Date(event.startDate)
             const eventEnd = new Date(event.endDate)
@@ -43,26 +120,54 @@ export function AllDayRow({ dates, events, language, onEventClick }: AllDayRowPr
 
           const visibleEvents = dayAllDayEvents.slice(0, MAX_VISIBLE_ALLDAY)
           const hiddenCount = dayAllDayEvents.length - MAX_VISIBLE_ALLDAY
+          const isDropTarget = dragState.isDragging && dragState.targetColumnIndex === dateIndex
 
           return (
             <div
               key={date.toISOString()}
-              className="min-h-[28px] p-1 border-r last:border-r-0 space-y-1"
+              className={cn(
+                'min-h-[28px] p-1 border-r last:border-r-0 space-y-1 transition-colors',
+                isDropTarget && 'bg-primary/10',
+              )}
             >
-              {visibleEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="text-xs px-2 py-0.5 rounded truncate cursor-pointer hover:opacity-80"
-                  style={{
-                    backgroundColor: event.backgroundColor || '#3b82f6',
-                    color: 'white',
-                  }}
-                  onClick={(e) => handleEventClick(e, event)}
-                  title={event.title}
-                >
-                  {event.title}
-                </div>
-              ))}
+              {/* ドラッグプレビュー */}
+              {isDropTarget &&
+                dragState.draggedEvent &&
+                !dayAllDayEvents.some((e) => e.id === dragState.draggedEvent?.id) && (
+                  <div
+                    className="text-xs px-2 py-0.5 rounded truncate opacity-50 border-2 border-dashed"
+                    style={{
+                      backgroundColor: dragState.draggedEvent.backgroundColor || '#3b82f6',
+                      borderColor: dragState.draggedEvent.borderColor || '#1d4ed8',
+                      color: 'white',
+                    }}
+                  >
+                    {dragState.draggedEvent.title}
+                  </div>
+                )}
+
+              {visibleEvents.map((event) => {
+                const isDragging = dragState.isDragging && dragState.draggedEvent?.id === event.id
+
+                return (
+                  <div
+                    key={event.id}
+                    className={cn(
+                      'text-xs px-2 py-0.5 rounded truncate cursor-grab hover:opacity-80 transition-opacity',
+                      isDragging && 'opacity-50',
+                    )}
+                    style={{
+                      backgroundColor: event.backgroundColor || '#3b82f6',
+                      color: 'white',
+                    }}
+                    onMouseDown={(e) => handleMouseDown(e, event)}
+                    onClick={(e) => handleEventClick(e, event)}
+                    title={event.title}
+                  >
+                    {event.title}
+                  </div>
+                )
+              })}
               {hiddenCount > 0 && (
                 <div className="text-xs text-muted-foreground px-2 cursor-pointer hover:text-foreground">
                   +{hiddenCount} {t.more}

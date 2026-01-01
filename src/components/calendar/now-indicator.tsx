@@ -24,15 +24,9 @@ export function NowIndicator({ date, position, config }: NowIndicatorProps) {
       style={{ top: position }}
     >
       {/* 丸い点 */}
-      <div
-        className="w-2.5 h-2.5 rounded-full -ml-1"
-        style={{ backgroundColor: color }}
-      />
+      <div className="w-2.5 h-2.5 rounded-full -ml-1" style={{ backgroundColor: color }} />
       {/* 線 */}
-      <div
-        className="flex-1 h-0.5"
-        style={{ backgroundColor: color }}
-      />
+      <div className="flex-1 h-0.5" style={{ backgroundColor: color }} />
     </div>
   )
 }

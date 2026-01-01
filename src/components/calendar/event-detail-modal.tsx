@@ -138,7 +138,11 @@ export function EventDetailModal({
                   <CardTitle className="text-xl font-bold">{currentEvent.title}</CardTitle>
                   {currentEvent.category && (
                     <div className="mt-2">
-                      <Badge variant="secondary" className="text-sm" style={getEventStyle(currentEvent)}>
+                      <Badge
+                        variant="secondary"
+                        className="text-sm"
+                        style={getEventStyle(currentEvent)}
+                      >
                         <div className="text-white font-medium">{currentEvent.category}</div>
                       </Badge>
                     </div>
