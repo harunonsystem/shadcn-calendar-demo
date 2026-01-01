@@ -39,15 +39,18 @@ export const formatDateTime = (date: Date, language: Language): string => {
 export const calculateDuration = (startDate: Date, endDate: Date, language: Language): string => {
   const t = getTranslation(language)
   const diffMs = endDate.getTime() - startDate.getTime()
-  const diffHours = Math.floor(diffMs / MS_PER_HOUR)
+
+  const MS_PER_DAY = MS_PER_HOUR * 24
+  const diffDays = Math.floor(diffMs / MS_PER_DAY)
+  const diffHours = Math.floor((diffMs % MS_PER_DAY) / MS_PER_HOUR)
   const diffMinutes = Math.floor((diffMs % MS_PER_HOUR) / MS_PER_MINUTE)
 
-  if (diffHours > 0) {
-    const hoursStr = `${diffHours}${t.units.hours}`
-    const minutesStr = diffMinutes > 0 ? `${diffMinutes}${t.units.minutes}` : ''
-    return `${hoursStr}${minutesStr}`
-  }
-  return `${diffMinutes}${t.units.minutes}`
+  const parts: string[] = []
+  if (diffDays > 0) parts.push(`${diffDays}${t.units.days}`)
+  if (diffHours > 0) parts.push(`${diffHours}${t.units.hours}`)
+  if (diffMinutes > 0) parts.push(`${diffMinutes}${t.units.minutes}`)
+
+  return parts.length > 0 ? parts.join('') : `0${t.units.minutes}`
 }
 
 export const calculateEventPosition = (event: CalendarEvent): { top: number; height: number } => {

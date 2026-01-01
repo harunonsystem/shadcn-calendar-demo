@@ -9,6 +9,7 @@ interface DayViewProps {
   config?: CalendarConfig
   language: Language
   onEventClick?: (event: CalendarEvent) => void
+  onEventEdit?: (event: CalendarEvent) => void
   onEventDrop?: (event: CalendarEvent, newDate: Date, newStartTime: number) => void
   onEventResize?: (event: CalendarEvent, newStartTime: number, newEndTime: number) => void
 }
@@ -19,6 +20,7 @@ export function DayView({
   config: propConfig,
   language,
   onEventClick,
+  onEventEdit,
   onEventDrop,
   onEventResize,
 }: DayViewProps) {
@@ -44,6 +46,7 @@ export function DayView({
         config={config}
         language={language}
         onEventClick={onEventClick}
+        onEventEdit={onEventEdit}
         onTimeSlotClick={handleTimeSlotClick}
         onEventDrop={onEventDrop}
         onEventResize={onEventResize}

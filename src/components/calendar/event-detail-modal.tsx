@@ -2,16 +2,36 @@ import { CalendarEvent, Language } from '@/types/calendar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { DateTimePicker } from '@/components/datepicker'
-import { X, Clock, MapPin, User, Tag, Edit2, Save } from 'lucide-react'
+import { X, Edit2, Save } from 'lucide-react'
 import { getEventStyle } from './calendar-utils'
 import { formatDateTime, calculateDuration } from '@/lib/utils/time'
+import { getTranslation } from '@/lib/i18n'
 import { useState, useEffect, useCallback } from 'react'
+
+interface Category {
+  category: string
+  label: string
+  backgroundColor?: string
+  borderColor?: string
+}
 
 interface EventDetailModalProps {
   event: CalendarEvent | null
   language: Language
   isOpen: boolean
+  categories?: Category[]
+  initialEditMode?: boolean
   onClose: () => void
   onEdit?: (event: CalendarEvent) => void
   onDelete?: (event: CalendarEvent) => void
@@ -22,6 +42,8 @@ export function EventDetailModal({
   event,
   language,
   isOpen,
+  categories = [],
+  initialEditMode = false,
   onClose,
   onEdit: _onEdit,
   onDelete,
@@ -30,7 +52,19 @@ export function EventDetailModal({
   const [isEditMode, setIsEditMode] = useState(false)
   const [editedEvent, setEditedEvent] = useState<CalendarEvent | null>(null)
 
-  // Escキーでモーダルを閉じる（編集モード中はキャンセル）
+  // モーダルが開くたびにinitialEditModeに基づいて状態をリセット
+  useEffect(() => {
+    if (isOpen && event) {
+      if (initialEditMode) {
+        setIsEditMode(true)
+        setEditedEvent({ ...event })
+      } else {
+        setIsEditMode(false)
+        setEditedEvent(null)
+      }
+    }
+  }, [isOpen, initialEditMode, event])
+
   const handleEscKey = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -53,7 +87,6 @@ export function EventDetailModal({
 
   if (!isOpen || !event) return null
 
-  // Initialize edit state when entering edit mode
   const handleEditStart = () => {
     setEditedEvent({ ...event })
     setIsEditMode(true)
@@ -72,60 +105,49 @@ export function EventDetailModal({
     }
   }
 
+  const handleCategoryChange = (value: string) => {
+    const selectedCategory = categories.find((c) => c.category === value)
+    setEditedEvent((prev) =>
+      prev
+        ? {
+            ...prev,
+            category: value,
+            backgroundColor: selectedCategory?.backgroundColor,
+            borderColor: selectedCategory?.borderColor,
+          }
+        : null,
+    )
+  }
+
   const currentEvent = isEditMode ? editedEvent : event
   if (!currentEvent) return null
 
-  const t = {
-    ja: {
-      eventDetails: 'イベント詳細',
-      startTime: '開始時間',
-      endTime: '終了時間',
-      duration: '時間',
-      category: 'カテゴリー',
-      description: '説明',
-      edit: '編集',
-      delete: '削除',
-      close: '閉じる',
-      save: '保存',
-      cancel: 'キャンセル',
-      noDescription: '説明がありません',
-    },
-    en: {
-      eventDetails: 'Event Details',
-      startTime: 'Start Time',
-      endTime: 'End Time',
-      duration: 'Duration',
-      category: 'Category',
-      description: 'Description',
-      edit: 'Edit',
-      delete: 'Delete',
-      close: 'Close',
-      save: 'Save',
-      cancel: 'Cancel',
-      noDescription: 'No description',
-    },
-  }
-
-  const labels = t[language]
+  const t = getTranslation(language)
+  const labels = t.eventDetailModal
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
-      {/* Modal */}
       <Card className="relative w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <CardTitle className="text-xl font-bold pr-8">{currentEvent.title}</CardTitle>
-              <div className="mt-2">
-                <Badge variant="secondary" className="text-sm" style={getEventStyle(currentEvent)}>
-                  <div className="text-white font-medium">
-                    {currentEvent.category || 'イベント'}
-                  </div>
-                </Badge>
-              </div>
+            <div className="flex-1 pr-8">
+              {!isEditMode && (
+                <>
+                  <CardTitle className="text-xl font-bold">{currentEvent.title}</CardTitle>
+                  {currentEvent.category && (
+                    <div className="mt-2">
+                      <Badge variant="secondary" className="text-sm" style={getEventStyle(currentEvent)}>
+                        <div className="text-white font-medium">{currentEvent.category}</div>
+                      </Badge>
+                    </div>
+                  )}
+                </>
+              )}
+              {isEditMode && (
+                <CardTitle className="text-xl font-bold">{labels.eventTitle}</CardTitle>
+              )}
             </div>
             <Button variant="ghost" size="sm" className="absolute top-4 right-4" onClick={onClose}>
               <X className="h-4 w-4" />
@@ -134,56 +156,65 @@ export function EventDetailModal({
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* Start Time */}
-          <div className="flex items-center gap-3">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <div className="flex-1">
-              {isEditMode ? (
-                <DateTimePicker
-                  value={new Date(currentEvent.startDate)}
-                  onChange={(date) =>
-                    setEditedEvent((prev) => (prev ? { ...prev, startDate: date } : null))
-                  }
-                  label={labels.startTime}
-                />
-              ) : (
-                <div>
-                  <div className="text-sm font-medium">{labels.startTime}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {formatDateTime(new Date(currentEvent.startDate), language)}
-                  </div>
-                </div>
-              )}
+          {/* Title (edit mode only) */}
+          {isEditMode && (
+            <div className="space-y-2">
+              <Label>{labels.eventTitle}</Label>
+              <Input
+                value={currentEvent.title}
+                onChange={(e) =>
+                  setEditedEvent((prev) => (prev ? { ...prev, title: e.target.value } : null))
+                }
+                autoFocus
+              />
             </div>
+          )}
+
+          {/* Start Time */}
+          <div className="space-y-2">
+            {isEditMode ? (
+              <DateTimePicker
+                value={new Date(currentEvent.startDate)}
+                onChange={(date) =>
+                  setEditedEvent((prev) => (prev ? { ...prev, startDate: date } : null))
+                }
+                label={labels.startTime}
+                language={language}
+              />
+            ) : (
+              <>
+                <div className="text-sm font-medium">{labels.startTime}</div>
+                <div className="text-sm text-muted-foreground">
+                  {formatDateTime(new Date(currentEvent.startDate), language)}
+                </div>
+              </>
+            )}
           </div>
 
           {/* End Time */}
-          <div className="flex items-center gap-3">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <div className="flex-1">
-              {isEditMode ? (
-                <DateTimePicker
-                  value={new Date(currentEvent.endDate)}
-                  onChange={(date) =>
-                    setEditedEvent((prev) => (prev ? { ...prev, endDate: date } : null))
-                  }
-                  label={labels.endTime}
-                />
-              ) : (
-                <div>
-                  <div className="text-sm font-medium">{labels.endTime}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {formatDateTime(new Date(currentEvent.endDate), language)}
-                  </div>
+          <div className="space-y-2">
+            {isEditMode ? (
+              <DateTimePicker
+                value={new Date(currentEvent.endDate)}
+                onChange={(date) =>
+                  setEditedEvent((prev) => (prev ? { ...prev, endDate: date } : null))
+                }
+                label={labels.endTime}
+                language={language}
+              />
+            ) : (
+              <>
+                <div className="text-sm font-medium">{labels.endTime}</div>
+                <div className="text-sm text-muted-foreground">
+                  {formatDateTime(new Date(currentEvent.endDate), language)}
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </div>
 
-          {/* Duration */}
-          <div className="flex items-center gap-3">
-            <User className="h-4 w-4 text-muted-foreground" />
-            <div>
+          {/* Duration (read-only) */}
+          {!isEditMode && (
+            <div className="space-y-2">
               <div className="text-sm font-medium">{labels.duration}</div>
               <div className="text-sm text-muted-foreground">
                 {calculateDuration(
@@ -193,28 +224,76 @@ export function EventDetailModal({
                 )}
               </div>
             </div>
-          </div>
-
-          {/* Category */}
-          {currentEvent.category && (
-            <div className="flex items-center gap-3">
-              <Tag className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <div className="text-sm font-medium">{labels.category}</div>
-                <div className="text-sm text-muted-foreground">{currentEvent.category}</div>
-              </div>
-            </div>
           )}
 
+          {/* Category */}
+          <div className="space-y-2">
+            {isEditMode ? (
+              <>
+                <Label>{t.addEventModal.category}</Label>
+                {categories.length > 0 ? (
+                  <Select value={currentEvent.category || ''} onValueChange={handleCategoryChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t.addEventModal.categoryPlaceholder} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.category} value={cat.category}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: cat.backgroundColor }}
+                            />
+                            {cat.label}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    value={currentEvent.category || ''}
+                    onChange={(e) =>
+                      setEditedEvent((prev) =>
+                        prev ? { ...prev, category: e.target.value } : null,
+                      )
+                    }
+                    placeholder={t.addEventModal.categoryPlaceholder}
+                  />
+                )}
+              </>
+            ) : currentEvent.category ? (
+              <>
+                <div className="text-sm font-medium">{t.addEventModal.category}</div>
+                <div className="text-sm text-muted-foreground">{currentEvent.category}</div>
+              </>
+            ) : null}
+          </div>
+
           {/* Description */}
-          <div className="flex items-start gap-3">
-            <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
-            <div>
-              <div className="text-sm font-medium">{labels.description}</div>
-              <div className="text-sm text-muted-foreground">
-                {currentEvent.description || labels.noDescription}
-              </div>
-            </div>
+          <div className="space-y-2">
+            {isEditMode ? (
+              <>
+                <Label>{t.addEventModal.description}</Label>
+                <Textarea
+                  value={currentEvent.description || ''}
+                  onChange={(e) =>
+                    setEditedEvent((prev) =>
+                      prev ? { ...prev, description: e.target.value } : null,
+                    )
+                  }
+                  placeholder={t.addEventModal.descriptionPlaceholder}
+                  rows={3}
+                />
+              </>
+            ) : (
+              <>
+                <div className="text-sm font-medium">{t.addEventModal.description}</div>
+                <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {currentEvent.description || labels.noDescription}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Actions */}

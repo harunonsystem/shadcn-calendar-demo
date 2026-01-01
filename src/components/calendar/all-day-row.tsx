@@ -5,7 +5,7 @@ interface AllDayRowProps {
   dates: Date[]
   events: CalendarEvent[]
   language: Language
-  onEventClick?: (event: CalendarEvent) => void
+  onEventClick?: (event: CalendarEvent, position: { x: number; y: number }) => void
 }
 
 const MAX_VISIBLE_ALLDAY = 3
@@ -15,6 +15,12 @@ export function AllDayRow({ dates, events, language, onEventClick }: AllDayRowPr
   const allDayEvents = events.filter((e) => e.allDay)
 
   if (allDayEvents.length === 0) return null
+
+  const handleEventClick = (e: React.MouseEvent, event: CalendarEvent) => {
+    e.stopPropagation()
+    const rect = e.currentTarget.getBoundingClientRect()
+    onEventClick?.(event, { x: rect.right + 8, y: rect.top })
+  }
 
   return (
     <div className="grid grid-cols-[60px_1fr] border-b bg-muted/30">
@@ -51,10 +57,7 @@ export function AllDayRow({ dates, events, language, onEventClick }: AllDayRowPr
                     backgroundColor: event.backgroundColor || '#3b82f6',
                     color: 'white',
                   }}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onEventClick?.(event)
-                  }}
+                  onClick={(e) => handleEventClick(e, event)}
                   title={event.title}
                 >
                   {event.title}

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Calendar } from '@/components/calendar/calendar'
 import { AddEventModal } from '@/components/calendar/add-event-modal'
 import { CalendarEvent, CalendarConfig } from '@/types/calendar'
-import { allMockEvents } from '@/fixtures/mock-events'
+import { allMockEvents, categoryColors } from '@/fixtures/mock-events'
 
 function App() {
   const [events, setEvents] = useState<CalendarEvent[]>(allMockEvents)
@@ -135,6 +135,7 @@ function App() {
       <AddEventModal
         language={config.language || 'ja'}
         isOpen={showAddModal}
+        categories={categoryColors}
         onClose={() => setShowAddModal(false)}
         onCreate={handleAddEvent}
       />

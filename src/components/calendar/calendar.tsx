@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAtom, useSetAtom } from 'jotai'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import { Card, CardContent } from '@/components/ui/card'
@@ -50,6 +50,9 @@ export function Calendar({
   const setConfig = useSetAtom(configAtom)
   const [selectedEvent, setSelectedEvent] = useAtom(selectedEventAtom)
   const [showEventDetail, setShowEventDetail] = useAtom(isEventDetailOpenAtom)
+
+  // 編集モードで開くかどうか
+  const [openInEditMode, setOpenInEditMode] = useState(false)
 
   // nuqs for URL state synchronization
   const [viewMode, setViewMode] = useQueryState(
@@ -107,20 +110,36 @@ export function Calendar({
     setCurrentDate(new Date())
   }
 
+  // 詳細表示（閲覧モード）
   const handleEventClick = (event: CalendarEvent) => {
     setSelectedEvent(event)
+    setOpenInEditMode(false)
     setShowEventDetail(true)
     onEventClick?.(event)
   }
 
-  const handleEventEdit = (event: CalendarEvent) => {
+  // 編集ボタンからの開始（編集モード）
+  const handleEventEditClick = (event: CalendarEvent) => {
+    setSelectedEvent(event)
+    setOpenInEditMode(true)
+    setShowEventDetail(true)
+  }
+
+  const handleEventSave = (event: CalendarEvent) => {
     setShowEventDetail(false)
+    setOpenInEditMode(false)
     onEventUpdate?.(event)
   }
 
   const handleEventDelete = (event: CalendarEvent) => {
     setShowEventDetail(false)
+    setOpenInEditMode(false)
     onEventDelete?.(event)
+  }
+
+  const handleModalClose = () => {
+    setShowEventDetail(false)
+    setOpenInEditMode(false)
   }
 
   // Get config with effective language
@@ -136,6 +155,7 @@ export function Calendar({
       config: effectiveConfig,
       language: language as Language,
       onEventClick: handleEventClick,
+      onEventEdit: handleEventEditClick,
       onEventDrop,
       onEventResize,
     }
@@ -172,10 +192,10 @@ export function Calendar({
         event={selectedEvent}
         language={language as Language}
         isOpen={showEventDetail}
-        onClose={() => setShowEventDetail(false)}
-        onEdit={handleEventEdit}
+        initialEditMode={openInEditMode}
+        onClose={handleModalClose}
         onDelete={handleEventDelete}
-        onUpdate={onEventUpdate}
+        onUpdate={handleEventSave}
       />
     </Card>
   )

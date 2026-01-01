@@ -34,6 +34,7 @@ interface TimeGridProps {
   config: CalendarConfig
   language: Language
   onEventClick?: (event: CalendarEvent) => void
+  onEventEdit?: (event: CalendarEvent) => void
   onDateClick?: (date: Date) => void
   onTimeSlotClick?: (date: Date, hour: number, minute: number) => void
   onEventDrop?: (event: CalendarEvent, newDate: Date, newStartTime: number) => void
@@ -47,6 +48,7 @@ export function TimeGrid({
   config,
   language,
   onEventClick,
+  onEventEdit,
   onDateClick,
   onTimeSlotClick,
   onEventDrop,
@@ -468,7 +470,14 @@ export function TimeGrid({
       )}
 
       {/* All-day events row (Google Calendar style) */}
-      <AllDayRow dates={dates} events={events} language={language} onEventClick={onEventClick} />
+      <AllDayRow
+        dates={dates}
+        events={events}
+        language={language}
+        onEventClick={(event, position) => {
+          setPopoverState({ isOpen: true, event, position })
+        }}
+      />
 
       {/* Time grid */}
       <div className="flex-1 overflow-y-auto">
@@ -693,7 +702,7 @@ export function TimeGrid({
         onClose={() => setPopoverState({ isOpen: false, event: null, position: { x: 0, y: 0 } })}
         onEdit={(event) => {
           setPopoverState({ isOpen: false, event: null, position: { x: 0, y: 0 } })
-          onEventClick?.(event)
+          onEventEdit?.(event)
         }}
         onDelete={(_event) => {
           setPopoverState({ isOpen: false, event: null, position: { x: 0, y: 0 } })

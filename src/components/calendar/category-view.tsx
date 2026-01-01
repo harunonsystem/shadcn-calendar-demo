@@ -11,6 +11,7 @@ interface CategoryViewProps {
   config?: CalendarConfig
   language: Language
   onEventClick?: (event: CalendarEvent) => void
+  onEventEdit?: (event: CalendarEvent) => void
   onEventDrop?: (event: CalendarEvent, newDate: Date, newStartTime: number) => void
   onEventResize?: (event: CalendarEvent, newStartTime: number, newEndTime: number) => void
 }
@@ -21,6 +22,7 @@ export function CategoryView({
   config: propConfig,
   language,
   onEventClick,
+  onEventEdit,
   onEventDrop,
   onEventResize,
 }: CategoryViewProps) {
@@ -99,6 +101,7 @@ export function CategoryView({
         config={config}
         language={language}
         onEventClick={onEventClick}
+        onEventEdit={onEventEdit}
         onEventDrop={onEventDrop}
         onEventResize={onEventResize}
         showDayHeaders={false}

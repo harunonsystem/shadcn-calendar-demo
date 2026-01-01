@@ -4,15 +4,31 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { X, Plus } from 'lucide-react'
 import { DateTimePicker } from '@/components/datepicker'
 import { getTranslation } from '@/lib/i18n'
+
+interface Category {
+  category: string
+  label: string
+  backgroundColor?: string
+  borderColor?: string
+}
 
 interface AddEventModalProps {
   language: Language
   isOpen: boolean
   initialDate?: Date
   initialStartMinutes?: number
+  categories?: Category[]
   onClose: () => void
   onCreate: (event: Omit<CalendarEvent, 'id'>) => void
 }
@@ -21,7 +37,8 @@ export function AddEventModal({
   language,
   isOpen,
   initialDate,
-  initialStartMinutes = 9 * 60, // デフォルト9:00
+  initialStartMinutes = 9 * 60,
+  categories = [],
   onClose,
   onCreate,
 }: AddEventModalProps) {
@@ -45,7 +62,6 @@ export function AddEventModal({
     return date
   })
 
-  // 初期日時の設定
   useEffect(() => {
     if (isOpen && initialDate) {
       const start = new Date(initialDate)
@@ -61,7 +77,6 @@ export function AddEventModal({
       )
       setEndDate(end)
 
-      // フォームをリセット
       setTitle('')
       setDescription('')
       setCategory('')
@@ -69,7 +84,6 @@ export function AddEventModal({
     }
   }, [isOpen, initialDate, initialStartMinutes])
 
-  // Escキーで閉じる
   const handleEscKey = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -90,13 +104,18 @@ export function AddEventModal({
   const t = getTranslation(language)
   const labels = t.addEventModal
 
+  // 選択されたカテゴリの色を取得
+  const selectedCategoryData = categories.find((c) => c.category === category)
+
   const handleCreate = () => {
     if (!title.trim()) return
 
     onCreate({
       title: title.trim(),
       description: description.trim() || undefined,
-      category: category.trim() || undefined,
+      category: category || undefined,
+      backgroundColor: selectedCategoryData?.backgroundColor,
+      borderColor: selectedCategoryData?.borderColor,
       startDate,
       endDate,
       allDay,
@@ -107,11 +126,9 @@ export function AddEventModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Modal */}
-      <Card className="relative w-full max-w-md mx-4 shadow-2xl">
+      <Card className="relative w-full max-w-md mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
@@ -172,25 +189,46 @@ export function AddEventModal({
             hideTime={allDay}
           />
 
-          {/* Category */}
+          {/* Category Select */}
           <div className="space-y-2">
-            <Label htmlFor="event-category">{labels.category}</Label>
-            <Input
-              id="event-category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder={labels.categoryPlaceholder}
-            />
+            <Label>{labels.category}</Label>
+            {categories.length > 0 ? (
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder={labels.categoryPlaceholder} />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.category} value={cat.category}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: cat.backgroundColor }}
+                        />
+                        {cat.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder={labels.categoryPlaceholder}
+              />
+            )}
           </div>
 
-          {/* Description */}
+          {/* Description Textarea */}
           <div className="space-y-2">
             <Label htmlFor="event-description">{labels.description}</Label>
-            <Input
+            <Textarea
               id="event-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={labels.descriptionPlaceholder}
+              rows={3}
             />
           </div>
 

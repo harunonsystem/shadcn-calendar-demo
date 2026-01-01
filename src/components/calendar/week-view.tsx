@@ -10,6 +10,7 @@ interface WeekViewProps {
   config?: CalendarConfig
   language: Language
   onEventClick?: (event: CalendarEvent) => void
+  onEventEdit?: (event: CalendarEvent) => void
   onDateClick?: (date: Date) => void
   onEventDrop?: (event: CalendarEvent, newDate: Date, newStartTime: number) => void
   onEventResize?: (event: CalendarEvent, newStartTime: number, newEndTime: number) => void
@@ -21,6 +22,7 @@ export function WeekView({
   config: propConfig,
   language,
   onEventClick,
+  onEventEdit,
   onDateClick,
   onEventDrop,
   onEventResize,
@@ -50,6 +52,7 @@ export function WeekView({
         config={config}
         language={language}
         onEventClick={onEventClick}
+        onEventEdit={onEventEdit}
         onDateClick={onDateClick}
         onTimeSlotClick={handleTimeSlotClick}
         onEventDrop={onEventDrop}

@@ -73,6 +73,24 @@ describe('utils/time', () => {
       const end = new Date(2025, 0, 1, 10, 30)
       expect(calculateDuration(start, end, 'en')).toBe('1h30m')
     })
+
+    it('日本語で日数を含む継続時間を計算する', () => {
+      const start = new Date(2025, 0, 1, 9, 0)
+      const end = new Date(2025, 0, 3, 10, 30) // 2日1時間30分後
+      expect(calculateDuration(start, end, 'ja')).toBe('2日1時間30分')
+    })
+
+    it('英語で日数を含む継続時間を計算する', () => {
+      const start = new Date(2025, 0, 1, 0, 0)
+      const end = new Date(2025, 0, 2, 0, 0) // ちょうど1日
+      expect(calculateDuration(start, end, 'en')).toBe('1d')
+    })
+
+    it('0分の場合は0分を返す', () => {
+      const start = new Date(2025, 0, 1, 9, 0)
+      const end = new Date(2025, 0, 1, 9, 0) // 同じ時刻
+      expect(calculateDuration(start, end, 'ja')).toBe('0分')
+    })
   })
 
   describe('calculateEventPosition', () => {

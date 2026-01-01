@@ -77,6 +77,19 @@ export const translations = {
       cancel: 'キャンセル',
       apply: '適用',
     },
+    // イベント詳細モーダル
+    eventDetailModal: {
+      title: 'イベント詳細',
+      eventTitle: 'タイトル',
+      startTime: '開始時間',
+      endTime: '終了時間',
+      duration: '時間',
+      edit: '編集',
+      delete: '削除',
+      save: '保存',
+      cancel: 'キャンセル',
+      noDescription: '説明がありません',
+    },
     // ロケール情報
     locale: 'ja-JP',
     dateFnsLocaleKey: 'ja',
@@ -87,8 +100,9 @@ export const translations = {
     },
     // 単位
     units: {
-      minutes: '分',
+      days: '日',
       hours: '時間',
+      minutes: '分',
     },
   },
   en: {
@@ -153,6 +167,19 @@ export const translations = {
       cancel: 'Cancel',
       apply: 'Apply',
     },
+    // Event detail modal
+    eventDetailModal: {
+      title: 'Event Details',
+      eventTitle: 'Title',
+      startTime: 'Start Time',
+      endTime: 'End Time',
+      duration: 'Duration',
+      edit: 'Edit',
+      delete: 'Delete',
+      save: 'Save',
+      cancel: 'Cancel',
+      noDescription: 'No description',
+    },
     // ロケール情報
     locale: 'en-US',
     dateFnsLocaleKey: 'enUS',
@@ -163,8 +190,9 @@ export const translations = {
     },
     // 単位
     units: {
-      minutes: 'm',
+      days: 'd',
       hours: 'h',
+      minutes: 'm',
     },
   },
 } as const
@@ -219,6 +247,18 @@ export type Translations = {
     readonly cancel: string
     readonly apply: string
   }
+  readonly eventDetailModal: {
+    readonly title: string
+    readonly eventTitle: string
+    readonly startTime: string
+    readonly endTime: string
+    readonly duration: string
+    readonly edit: string
+    readonly delete: string
+    readonly save: string
+    readonly cancel: string
+    readonly noDescription: string
+  }
   readonly locale: string
   readonly dateFnsLocaleKey: string
   readonly formats: {
@@ -226,8 +266,9 @@ export type Translations = {
     readonly dateOptions: Intl.DateTimeFormatOptions
   }
   readonly units: {
-    readonly minutes: string
+    readonly days: string
     readonly hours: string
+    readonly minutes: string
   }
 }
 
