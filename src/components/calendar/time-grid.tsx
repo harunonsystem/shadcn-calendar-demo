@@ -7,14 +7,13 @@ import {
 } from '@/types/calendar'
 import { isSameDay } from '@/lib/utils/date'
 import { cn } from '@/lib/utils'
-import { getEventStyle } from './calendar-utils'
 import {
-  getTimeGridEventInfo,
   calculateEventPosition,
   groupOverlappingEvents,
   calculateOverlapLayout,
   getNowIndicatorPositionForTimeGrid,
 } from '@/lib/utils/time'
+import { generateTimeSlots } from '@/lib/utils/time-slots'
 import {
   TIME_SLOT_HEIGHT_PX,
   TIME_SLOT_INTERVAL_MINUTES,
@@ -27,6 +26,8 @@ import { EventResizeModal } from './event-resize-modal'
 import { EventMoveModal } from './event-move-modal'
 import { EventPopover } from './event-popover'
 import { AllDayRow } from './all-day-row'
+import { NowIndicator } from './now-indicator'
+import { TimeGridEvent } from './time-grid-event'
 
 interface TimeGridProps {
   dates: Date[]
@@ -434,11 +435,7 @@ export function TimeGrid({
   ])
 
   // 24時間全体を表示
-  const hours = Array.from({ length: 24 }, (_, i) => i)
-  const timeSlots = hours.flatMap((hour) => [
-    { hour, minute: 0, label: `${hour}`, isMainHour: true },
-    { hour, minute: 30, label: '', isMainHour: false },
-  ])
+  const timeSlots = generateTimeSlots()
 
   const t = getTranslation(language)
   const weekDays = t.weekDays
@@ -553,23 +550,7 @@ export function TimeGrid({
                 )}
 
                 {/* Now Indicator - 今日の列にのみ表示 */}
-                {config.showNowIndicator && isSameDay(date, new Date()) && (
-                  <div
-                    className="absolute left-0 right-0 z-30 pointer-events-none flex items-center"
-                    style={{ top: nowIndicatorPos }}
-                  >
-                    {/* 丸い点 */}
-                    <div
-                      className="w-2.5 h-2.5 rounded-full -ml-1"
-                      style={{ backgroundColor: config.nowIndicatorColor || '#ef4444' }}
-                    />
-                    {/* 線 */}
-                    <div
-                      className="flex-1 h-0.5"
-                      style={{ backgroundColor: config.nowIndicatorColor || '#ef4444' }}
-                    />
-                  </div>
-                )}
+                <NowIndicator date={date} position={nowIndicatorPos} config={config} />
 
                 {/* Events */}
                 {(() => {
@@ -582,85 +563,35 @@ export function TimeGrid({
                     const layouts = calculateOverlapLayout(group, config.eventStackMode)
 
                     return layouts.map(({ event, width, left, zIndex }) => {
-                      const { position, displayInfo, timeRange } = getTimeGridEventInfo(event)
                       const isDragging =
                         dragState.isDragging && dragState.draggedEvent?.id === event.id
                       const isResizing =
                         resizeState.isResizing && resizeState.resizedEvent?.id === event.id
 
                       return (
-                        <div
+                        <TimeGridEvent
                           key={event.id}
-                          className={cn(
-                            'absolute px-1 py-0.5 text-xs rounded cursor-move group transition-all hover:z-50 hover:shadow-lg',
-                            isDragging && 'opacity-50 shadow-lg border-2 border-blue-500',
-                            isResizing && 'opacity-70 shadow-md z-50',
-                          )}
-                          style={{
-                            top: position.top,
-                            height: position.height,
-                            left: `${left}%`,
-                            width: `${width}%`,
-                            zIndex: isDragging || isResizing ? 50 : zIndex + 10,
-                            ...getEventStyle(event),
+                          event={event}
+                          config={config}
+                          width={width}
+                          left={left}
+                          zIndex={zIndex}
+                          isDragging={isDragging}
+                          isResizing={isResizing}
+                          isDragStarted={isDragStarted}
+                          onMouseDown={handleMouseDown}
+                          onClick={(e, clickedEvent) => {
+                            const rect = e.currentTarget.getBoundingClientRect()
+                            setPopoverState({
+                              isOpen: true,
+                              event: clickedEvent,
+                              position: {
+                                x: rect.right + 8,
+                                y: rect.top,
+                              },
+                            })
                           }}
-                          onMouseDown={(e) => handleMouseDown(e, event)}
-                          onClick={(e) => {
-                            e.stopPropagation()
-
-                            // ドラッグが発生していない場合のみクリックとして処理
-                            if (
-                              !dragState.isDragging &&
-                              !resizeState.isResizing &&
-                              !isDragStarted
-                            ) {
-                              // ポップオーバーを表示
-                              const rect = e.currentTarget.getBoundingClientRect()
-                              setPopoverState({
-                                isOpen: true,
-                                event,
-                                position: {
-                                  x: rect.right + 8,
-                                  y: rect.top,
-                                },
-                              })
-                            }
-                          }}
-                        >
-                          {/* Top resize handle */}
-                          {config.enableResize && position.height >= 30 && (
-                            <div
-                              className="absolute -top-1 left-0 right-0 h-3 cursor-n-resize opacity-0 group-hover:opacity-100 transition-opacity"
-                              onMouseDown={(e) => {
-                                e.stopPropagation()
-                                handleMouseDown(e, event, 'top')
-                              }}
-                            />
-                          )}
-
-                          {displayInfo.showTitle && (
-                            <div className="font-semibold text-white truncate">{event.title}</div>
-                          )}
-                          {displayInfo.showTime && (
-                            <div className="text-white/90 text-xs truncate">{timeRange}</div>
-                          )}
-                          {displayInfo.showDescription && event.description && (
-                            <div className="text-white/80 text-xs truncate">
-                              {event.description}
-                            </div>
-                          )}
-
-                          {/* Bottom resize handle */}
-                          {config.enableResize && position.height >= 30 && (
-                            <div
-                              className="absolute -bottom-1 left-0 right-0 h-3 cursor-s-resize opacity-0 group-hover:opacity-100 transition-opacity"
-                              onMouseDown={(e) => {
-                                e.stopPropagation()
-                                handleMouseDown(e, event, 'bottom')
-                              }}
-                            />
-                          )}
-                        </div>
+                        />
                       )
                     })
                   })
