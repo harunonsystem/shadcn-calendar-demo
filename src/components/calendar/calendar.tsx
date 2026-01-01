@@ -1,129 +1,182 @@
-import React, { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
-import { ViewMode, CalendarEvent } from '@/types/calendar'
-import { getMonthDays, formatDate, isToday, isSameDay } from '@/lib/date-utils'
-import { cn } from '@/lib/utils'
+import { useEffect } from 'react'
+import { useAtom, useSetAtom } from 'jotai'
+import { parseAsStringLiteral, useQueryState } from 'nuqs'
+import { Card, CardContent } from '@/components/ui/card'
+import { ViewMode, CalendarEvent, CalendarConfig, Language } from '@/types/calendar'
+import { CalendarHeader } from './calendar-header'
+import { MonthView } from './month-view'
+import { WeekView } from './week-view'
+import { DayView } from './day-view'
+import { CategoryView } from './category-view'
+import { EventDetailModal } from './event-detail-modal'
+import {
+  currentDateAtom,
+  eventsAtom,
+  configAtom,
+  selectedEventAtom,
+  isEventDetailOpenAtom,
+} from '@/lib/atoms'
 
 interface CalendarProps {
   events?: CalendarEvent[]
+  config?: CalendarConfig
   onEventClick?: (event: CalendarEvent) => void
+  onEventUpdate?: (event: CalendarEvent) => void
+  onEventDelete?: (event: CalendarEvent) => void
   onDateClick?: (date: Date) => void
   onCreateEvent?: () => void
+  onEventDrop?: (event: CalendarEvent, newDate: Date, newStartTime: number) => void
+  onEventResize?: (event: CalendarEvent, newStartTime: number, newEndTime: number) => void
 }
 
-export function Calendar({ events = [], onEventClick, onDateClick, onCreateEvent }: CalendarProps) {
-  const [currentDate, setCurrentDate] = useState(new Date())
-  const [viewMode, setViewMode] = useState<ViewMode>('month')
+// nuqs parsers for URL state
+const viewModeParser = parseAsStringLiteral(['month', 'week', 'day', 'category'] as const)
+const languageParser = parseAsStringLiteral(['ja', 'en'] as const)
 
-  const year = currentDate.getFullYear()
-  const month = currentDate.getMonth()
-  const monthDays = getMonthDays(year, month)
+export function Calendar({
+  events: propEvents = [],
+  config: propConfig = {},
+  onEventClick,
+  onEventUpdate,
+  onEventDelete,
+  onDateClick,
+  onCreateEvent,
+  onEventDrop,
+  onEventResize,
+}: CalendarProps) {
+  // Jotai atoms
+  const [currentDate, setCurrentDate] = useAtom(currentDateAtom)
+  const setEvents = useSetAtom(eventsAtom)
+  const setConfig = useSetAtom(configAtom)
+  const [selectedEvent, setSelectedEvent] = useAtom(selectedEventAtom)
+  const [showEventDetail, setShowEventDetail] = useAtom(isEventDetailOpenAtom)
 
-  const prevMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1))
+  // nuqs for URL state synchronization
+  const [viewMode, setViewMode] = useQueryState(
+    'type',
+    viewModeParser.withDefault(propConfig.defaultView || 'month'),
+  )
+  const [language, setLanguage] = useQueryState(
+    'lang',
+    languageParser.withDefault(propConfig.language || 'ja'),
+  )
+
+  // Sync props to atoms
+  useEffect(() => {
+    setEvents(propEvents)
+  }, [propEvents, setEvents])
+
+  useEffect(() => {
+    setConfig({
+      showNowIndicator: true,
+      nowIndicatorColor: '#ef4444',
+      language: 'ja',
+      defaultView: 'month',
+      enableDragDrop: true,
+      enableResize: true,
+      eventStackMode: 'stack',
+      quickResize: false,
+      quickDragDrop: false,
+      firstDayOfWeek: 0,
+      ...propConfig,
+    })
+  }, [propConfig, setConfig])
+
+  const navigate = (direction: 'prev' | 'next') => {
+    const year = currentDate.getFullYear()
+    const month = currentDate.getMonth()
+
+    if (viewMode === 'month') {
+      setCurrentDate(new Date(year, month + (direction === 'next' ? 1 : -1), 1))
+    } else if (viewMode === 'week') {
+      const days = direction === 'next' ? 7 : -7
+      setCurrentDate(new Date(currentDate.getTime() + days * 24 * 60 * 60 * 1000))
+    } else if (viewMode === 'day' || viewMode === 'category') {
+      const days = direction === 'next' ? 1 : -1
+      setCurrentDate(new Date(currentDate.getTime() + days * 24 * 60 * 60 * 1000))
+    }
   }
 
-  const nextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1))
+  const handleDateClick = (date: Date) => {
+    setCurrentDate(date)
+    setViewMode('day')
+    onDateClick?.(date)
   }
 
-  const getEventsForDate = (date: Date) => {
-    return events.filter(event => 
-      isSameDay(new Date(event.startDate), date)
-    )
+  const handleTodayClick = () => {
+    setCurrentDate(new Date())
   }
 
-  const monthNames = [
-    '1月', '2月', '3月', '4月', '5月', '6月',
-    '7月', '8月', '9月', '10月', '11月', '12月'
-  ]
+  const handleEventClick = (event: CalendarEvent) => {
+    setSelectedEvent(event)
+    setShowEventDetail(true)
+    onEventClick?.(event)
+  }
 
-  const weekDays = ['月', '火', '水', '木', '金', '土', '日']
+  const handleEventEdit = (event: CalendarEvent) => {
+    setShowEventDetail(false)
+    onEventUpdate?.(event)
+  }
+
+  const handleEventDelete = (event: CalendarEvent) => {
+    setShowEventDetail(false)
+    onEventDelete?.(event)
+  }
+
+  // Get config with effective language
+  const effectiveConfig: CalendarConfig = {
+    ...propConfig,
+    language: language as Language,
+  }
+
+  const renderCurrentView = () => {
+    const commonProps = {
+      currentDate,
+      events: propEvents,
+      config: effectiveConfig,
+      language: language as Language,
+      onEventClick: handleEventClick,
+      onEventDrop,
+      onEventResize,
+    }
+
+    switch (viewMode) {
+      case 'month':
+        return <MonthView {...commonProps} onDateClick={handleDateClick} />
+      case 'week':
+        return <WeekView {...commonProps} onDateClick={handleDateClick} />
+      case 'day':
+        return <DayView {...commonProps} />
+      case 'category':
+        return <CategoryView {...commonProps} />
+      default:
+        return <MonthView {...commonProps} onDateClick={handleDateClick} />
+    }
+  }
 
   return (
     <Card className="w-full">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-2xl font-bold">
-            {year}年 {monthNames[month]}
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={prevMonth}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={nextMonth}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              onClick={onCreateEvent}
-              className="ml-4"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              イベント追加
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-7 gap-2">
-          {weekDays.map(day => (
-            <div key={day} className="p-2 text-center font-semibold text-muted-foreground">
-              {day}
-            </div>
-          ))}
-          {monthDays.map(date => {
-            const dayEvents = getEventsForDate(date)
-            return (
-              <div
-                key={date.toISOString()}
-                className={cn(
-                  "min-h-24 p-2 border rounded-md cursor-pointer hover:bg-accent",
-                  isToday(date) && "bg-primary/10 border-primary"
-                )}
-                onClick={() => onDateClick?.(date)}
-              >
-                <div className={cn(
-                  "text-sm font-medium",
-                  isToday(date) && "text-primary font-bold"
-                )}>
-                  {date.getDate()}
-                </div>
-                <div className="space-y-1 mt-1">
-                  {dayEvents.slice(0, 2).map(event => (
-                    <Badge
-                      key={event.id}
-                      variant="secondary"
-                      className="text-xs truncate block cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onEventClick?.(event)
-                      }}
-                    >
-                      {event.title}
-                    </Badge>
-                  ))}
-                  {dayEvents.length > 2 && (
-                    <div className="text-xs text-muted-foreground">
-                      +{dayEvents.length - 2} more
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </CardContent>
+      <CalendarHeader
+        viewMode={viewMode as ViewMode}
+        language={language as Language}
+        currentDate={currentDate}
+        onViewModeChange={(mode) => setViewMode(mode)}
+        onLanguageChange={(lang) => setLanguage(lang)}
+        onNavigate={navigate}
+        onTodayClick={handleTodayClick}
+        onCreateEvent={onCreateEvent}
+      />
+      <CardContent>{renderCurrentView()}</CardContent>
+
+      <EventDetailModal
+        event={selectedEvent}
+        language={language as Language}
+        isOpen={showEventDetail}
+        onClose={() => setShowEventDetail(false)}
+        onEdit={handleEventEdit}
+        onDelete={handleEventDelete}
+        onUpdate={onEventUpdate}
+      />
     </Card>
   )
 }
