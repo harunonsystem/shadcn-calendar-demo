@@ -11,6 +11,7 @@ import {
   COLUMN_MODE_GAP_PERCENT,
   EVENT_DISPLAY_THRESHOLDS,
 } from '../constants'
+import { getTranslation } from '@/lib/i18n'
 
 export const formatTime = (date: Date): string => {
   return date.toLocaleTimeString([], {
@@ -25,7 +26,8 @@ export const formatTimeRange = (startDate: Date, endDate: Date): string => {
 }
 
 export const formatDateTime = (date: Date, language: Language): string => {
-  const dateStr = date.toLocaleDateString(language === 'ja' ? 'ja-JP' : 'en-US', {
+  const t = getTranslation(language)
+  const dateStr = date.toLocaleDateString(t.locale, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -35,16 +37,17 @@ export const formatDateTime = (date: Date, language: Language): string => {
 }
 
 export const calculateDuration = (startDate: Date, endDate: Date, language: Language): string => {
+  const t = getTranslation(language)
   const diffMs = endDate.getTime() - startDate.getTime()
   const diffHours = Math.floor(diffMs / MS_PER_HOUR)
   const diffMinutes = Math.floor((diffMs % MS_PER_HOUR) / MS_PER_MINUTE)
 
   if (diffHours > 0) {
-    return language === 'ja'
-      ? `${diffHours}時間${diffMinutes > 0 ? `${diffMinutes}分` : ''}`
-      : `${diffHours}h ${diffMinutes > 0 ? `${diffMinutes}m` : ''}`
+    const hoursStr = `${diffHours}${t.units.hours}`
+    const minutesStr = diffMinutes > 0 ? `${diffMinutes}${t.units.minutes}` : ''
+    return `${hoursStr}${minutesStr}`
   }
-  return language === 'ja' ? `${diffMinutes}分` : `${diffMinutes}m`
+  return `${diffMinutes}${t.units.minutes}`
 }
 
 export const calculateEventPosition = (event: CalendarEvent): { top: number; height: number } => {
@@ -104,6 +107,10 @@ export const getEventDisplayInfo = (height: number) => {
 }
 
 export const getMonthEventTitle = (event: CalendarEvent): string => {
+  // 終日イベントは時刻表示なし
+  if (event.allDay) {
+    return event.title
+  }
   const timeStr = formatTime(new Date(event.startDate))
   return `${timeStr} ${event.title}`
 }

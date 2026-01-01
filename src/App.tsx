@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { Calendar } from '@/components/calendar/calendar'
+import { AddEventModal } from '@/components/calendar/add-event-modal'
 import { CalendarEvent, CalendarConfig } from '@/types/calendar'
 import { allMockEvents } from '@/fixtures/mock-events'
 
 function App() {
   const [events, setEvents] = useState<CalendarEvent[]>(allMockEvents)
+  const [showAddModal, setShowAddModal] = useState(false)
 
   const [config] = useState<CalendarConfig>({
     showNowIndicator: true,
@@ -29,7 +31,7 @@ function App() {
 
   const handleEventDelete = (event: CalendarEvent) => {
     console.log('Event delete:', event)
-    // Here you would typically delete the event from your state/database
+    setEvents((prevEvents) => prevEvents.filter((e) => e.id !== event.id))
   }
 
   const handleDateClick = (date: Date) => {
@@ -37,7 +39,16 @@ function App() {
   }
 
   const handleCreateEvent = () => {
-    console.log('Create new event')
+    setShowAddModal(true)
+  }
+
+  const handleAddEvent = (newEvent: Omit<CalendarEvent, 'id'>) => {
+    const event: CalendarEvent = {
+      ...newEvent,
+      id: `event-${Date.now()}`,
+    }
+    setEvents((prevEvents) => [...prevEvents, event])
+    console.log('Event created:', event)
   }
 
   const handleEventDrop = (event: CalendarEvent, newDate: Date, newStartTime: number) => {
@@ -119,6 +130,14 @@ function App() {
           onEventResize={handleEventResize}
         />
       </div>
+
+      {/* Add Event Modal */}
+      <AddEventModal
+        language={config.language || 'ja'}
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onCreate={handleAddEvent}
+      />
     </div>
   )
 }

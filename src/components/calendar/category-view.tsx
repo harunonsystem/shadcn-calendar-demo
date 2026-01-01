@@ -3,6 +3,7 @@ import { CalendarEvent, CalendarConfig, Language } from '@/types/calendar'
 import { TimeGrid } from './time-grid'
 import { currentDateAtom, eventsAtom, configAtom } from '@/lib/atoms'
 import { getUniqueCategories } from '@/lib/utils/event'
+import { getTranslation } from '@/lib/i18n'
 
 interface CategoryViewProps {
   currentDate?: Date
@@ -68,11 +69,10 @@ export function CategoryView({
   })
 
   if (categories.length === 0) {
-    const noEventsMessage =
-      language === 'ja' ? 'カテゴリが設定されたイベントがありません' : 'No events with categories'
+    const t = getTranslation(language)
     return (
       <div className="flex items-center justify-center h-[600px] text-muted-foreground">
-        {noEventsMessage}
+        {t.noEventsWithCategory}
       </div>
     )
   }

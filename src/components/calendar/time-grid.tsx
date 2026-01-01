@@ -21,10 +21,12 @@ import {
   MINUTES_PER_HOUR,
   HOURS_PER_DAY,
 } from '@/lib/constants'
+import { getTranslation } from '@/lib/i18n'
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { EventResizeModal } from './event-resize-modal'
 import { EventMoveModal } from './event-move-modal'
 import { EventPopover } from './event-popover'
+import { AllDayRow } from './all-day-row'
 
 interface TimeGridProps {
   dates: Date[]
@@ -436,9 +438,8 @@ export function TimeGrid({
     { hour, minute: 30, label: '', isMainHour: false },
   ])
 
-  const weekDaysJa = ['月', '火', '水', '木', '金', '土', '日']
-  const weekDaysEn = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-  const weekDays = language === 'ja' ? weekDaysJa : weekDaysEn
+  const t = getTranslation(language)
+  const weekDays = t.weekDays
 
   return (
     <div className="flex flex-col h-full">
@@ -465,6 +466,14 @@ export function TimeGrid({
           </div>
         </div>
       )}
+
+      {/* All-day events row (Google Calendar style) */}
+      <AllDayRow
+        dates={dates}
+        events={events}
+        language={language}
+        onEventClick={onEventClick}
+      />
 
       {/* Time grid */}
       <div className="flex-1 overflow-y-auto">
@@ -560,8 +569,8 @@ export function TimeGrid({
 
                 {/* Events */}
                 {(() => {
-                  const dayEvents = events.filter((event) =>
-                    isSameDay(new Date(event.startDate), date),
+                  const dayEvents = events.filter(
+                    (event) => !event.allDay && isSameDay(new Date(event.startDate), date),
                   )
                   const eventGroups = groupOverlappingEvents(dayEvents)
 

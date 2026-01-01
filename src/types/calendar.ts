@@ -7,6 +7,7 @@ export interface CalendarEvent {
   description?: string
   startDate: Date
   endDate: Date
+  allDay?: boolean // 終日イベント
   color?: string
   backgroundColor?: string
   borderColor?: string

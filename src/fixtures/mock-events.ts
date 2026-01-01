@@ -162,6 +162,45 @@ export const overlappingEvents: CalendarEvent[] = [
 ]
 
 /**
+ * 終日イベント
+ */
+export const allDayEvents: CalendarEvent[] = [
+  {
+    id: 'allday-1',
+    title: '祝日: 元旦',
+    description: '新年',
+    startDate: createDate(0, 0, 0),
+    endDate: createDate(0, 23, 59),
+    backgroundColor: '#ef4444',
+    borderColor: '#dc2626',
+    category: 'プライベート',
+    allDay: true,
+  },
+  {
+    id: 'allday-2',
+    title: '出張',
+    description: '東京出張',
+    startDate: createDate(3, 0, 0),
+    endDate: createDate(4, 23, 59),
+    backgroundColor: '#3b82f6',
+    borderColor: '#2563eb',
+    category: '仕事',
+    allDay: true,
+  },
+  {
+    id: 'allday-3',
+    title: '休暇',
+    description: '有給休暇',
+    startDate: createDate(5, 0, 0),
+    endDate: createDate(5, 23, 59),
+    backgroundColor: '#10b981',
+    borderColor: '#059669',
+    category: 'プライベート',
+    allDay: true,
+  },
+]
+
+/**
  * 全イベント（デフォルトエクスポート用）
  */
 export const allMockEvents: CalendarEvent[] = [
@@ -185,6 +224,7 @@ export const allMockEvents: CalendarEvent[] = [
     backgroundColor: categoryColors.find((c) => c.category === event.category)?.backgroundColor,
     borderColor: categoryColors.find((c) => c.category === event.category)?.borderColor,
   })),
+  ...allDayEvents,
 ]
 
 export default allMockEvents

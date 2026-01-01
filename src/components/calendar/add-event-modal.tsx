@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { X, Plus } from 'lucide-react'
 import { DateTimePicker } from '@/components/datepicker'
+import { getTranslation } from '@/lib/i18n'
 
 interface AddEventModalProps {
   language: Language
@@ -27,6 +28,7 @@ export function AddEventModal({
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState('')
+  const [allDay, setAllDay] = useState(false)
   const [startDate, setStartDate] = useState<Date>(() => {
     const date = initialDate ? new Date(initialDate) : new Date()
     date.setHours(Math.floor(initialStartMinutes / 60), initialStartMinutes % 60, 0, 0)
@@ -63,6 +65,7 @@ export function AddEventModal({
       setTitle('')
       setDescription('')
       setCategory('')
+      setAllDay(false)
     }
   }, [isOpen, initialDate, initialStartMinutes])
 
@@ -84,36 +87,8 @@ export function AddEventModal({
 
   if (!isOpen) return null
 
-  const t = {
-    ja: {
-      addEvent: '新規イベント',
-      title: 'タイトル',
-      titlePlaceholder: 'イベント名を入力',
-      startTime: '開始日時',
-      endTime: '終了日時',
-      description: '説明',
-      descriptionPlaceholder: '説明を入力（任意）',
-      category: 'カテゴリ',
-      categoryPlaceholder: 'カテゴリ名（任意）',
-      create: '作成',
-      cancel: 'キャンセル',
-    },
-    en: {
-      addEvent: 'New Event',
-      title: 'Title',
-      titlePlaceholder: 'Enter event name',
-      startTime: 'Start Time',
-      endTime: 'End Time',
-      description: 'Description',
-      descriptionPlaceholder: 'Enter description (optional)',
-      category: 'Category',
-      categoryPlaceholder: 'Category name (optional)',
-      create: 'Create',
-      cancel: 'Cancel',
-    },
-  }
-
-  const labels = t[language]
+  const t = getTranslation(language)
+  const labels = t.addEventModal
 
   const handleCreate = () => {
     if (!title.trim()) return
@@ -124,6 +99,7 @@ export function AddEventModal({
       category: category.trim() || undefined,
       startDate,
       endDate,
+      allDay,
     })
 
     onClose()
@@ -140,7 +116,7 @@ export function AddEventModal({
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <Plus className="h-5 w-5" />
-              {labels.addEvent}
+              {labels.title}
             </CardTitle>
             <Button variant="ghost" size="sm" onClick={onClose}>
               <X className="h-4 w-4" />
@@ -149,32 +125,51 @@ export function AddEventModal({
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* Title */}
+          {/* Title (Required) */}
           <div className="space-y-2">
-            <Label htmlFor="event-title">{labels.title}</Label>
+            <Label htmlFor="event-title">
+              {labels.eventTitle}
+              <span className="text-red-500 ml-1">*</span>
+            </Label>
             <Input
               id="event-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder={labels.titlePlaceholder}
+              placeholder={labels.eventTitlePlaceholder}
               autoFocus
             />
           </div>
 
-          {/* Start Time */}
+          {/* All Day Toggle */}
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="event-allday"
+              checked={allDay}
+              onChange={(e) => setAllDay(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            <Label htmlFor="event-allday" className="cursor-pointer">
+              {labels.allDay}
+            </Label>
+          </div>
+
+          {/* Start Time/Date */}
           <DateTimePicker
             value={startDate}
             onChange={setStartDate}
-            label={labels.startTime}
+            label={allDay ? labels.startDate : labels.startTime}
             language={language}
+            hideTime={allDay}
           />
 
-          {/* End Time */}
+          {/* End Time/Date */}
           <DateTimePicker
             value={endDate}
             onChange={setEndDate}
-            label={labels.endTime}
+            label={allDay ? labels.endDate : labels.endTime}
             language={language}
+            hideTime={allDay}
           />
 
           {/* Category */}
