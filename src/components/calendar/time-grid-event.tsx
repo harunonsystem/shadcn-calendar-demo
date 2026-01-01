@@ -57,7 +57,7 @@ export function TimeGridEvent({
         left: `${left}%`,
         width: `${width}%`,
         zIndex: isDragging || isResizing ? 50 : zIndex + 10,
-        ...getEventStyle(event),
+        ...getEventStyle(event, config),
       }}
       onMouseDown={(e) => onMouseDown(e, event)}
       onClick={(e) => {

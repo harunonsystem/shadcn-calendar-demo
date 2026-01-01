@@ -18,6 +18,7 @@ function App() {
     eventStackMode: 'stack',
     quickResize: false,
     quickDragDrop: false, // true: 即座に移動, false: modal確認
+    categoryColors: categoryColors,
   })
 
   const handleEventClick = (event: CalendarEvent) => {

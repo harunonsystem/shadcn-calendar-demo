@@ -192,6 +192,14 @@ export function Calendar({
         event={selectedEvent}
         language={language as Language}
         isOpen={showEventDetail}
+        categories={
+          propConfig.categoryColors?.map((c) => ({
+            category: c.label,
+            label: c.label,
+            backgroundColor: c.backgroundColor,
+            borderColor: c.borderColor,
+          })) || []
+        }
         initialEditMode={openInEditMode}
         onClose={handleModalClose}
         onDelete={handleEventDelete}

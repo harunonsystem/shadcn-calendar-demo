@@ -19,37 +19,39 @@ export const createDate = (dayOffset: number, hours: number, minutes: number = 0
 }
 
 /**
- * event category and colro of background and border setting
+ * カテゴリ別の色設定
+ * 色はここで一元管理され、イベント表示時に自動適用される
  */
 export const categoryColors = [
   {
     category: '仕事',
     label: '仕事',
-    borderColor: '#9a4a4aff',
+    borderColor: '#1d4ed8',
     backgroundColor: '#3b82f6',
   },
   {
     category: 'プライベート',
     label: 'プライベート',
-    borderColor: '#1f0303ff',
+    borderColor: '#dc2626',
     backgroundColor: '#ef4444',
   },
   {
     category: '健康',
     label: '健康',
-    borderColor: '#ccccccff',
+    borderColor: '#059669',
     backgroundColor: '#10b981',
   },
   {
     category: 'テスト',
     label: 'テスト',
-    borderColor: '#ccc',
+    borderColor: '#6d28d9',
     backgroundColor: '#8b5cf6',
   },
 ]
 
 /**
  * 仕事カテゴリのイベント
+ * 色はcategoryColorsから自動取得されるため、個別設定不要
  */
 export const workEvents: CalendarEvent[] = [
   {
@@ -58,8 +60,6 @@ export const workEvents: CalendarEvent[] = [
     description: 'チームミーティング',
     startDate: createDate(0, 9, 0),
     endDate: createDate(0, 10, 30),
-    backgroundColor: '#3b82f6',
-    borderColor: '#ccc',
     category: '仕事',
   },
   {
@@ -68,8 +68,6 @@ export const workEvents: CalendarEvent[] = [
     description: 'プロジェクト締切',
     startDate: createDate(0, 14, 0),
     endDate: createDate(0, 15, 0),
-    backgroundColor: '#ef4444',
-    borderColor: '#ccc',
     category: '仕事',
   },
   {
@@ -78,8 +76,6 @@ export const workEvents: CalendarEvent[] = [
     description: '週次会議',
     startDate: createDate(2, 10, 0),
     endDate: createDate(2, 11, 30),
-    backgroundColor: '#3b82f6',
-    borderColor: '#ccc',
     category: '仕事',
   },
 ]
@@ -96,8 +92,6 @@ export const privateEvents: CalendarEvent[] = [
       '友達とランチ友達とランチ友達とランチ友達とランチ友達とランチ友達とランチ友達とランチ友達とランチ友達とランチ友達とランチ友達とランチ友達とランチ',
     startDate: createDate(1, 12, 0),
     endDate: createDate(1, 13, 0),
-    backgroundColor: '#10b981',
-    borderColor: '#ccc',
     category: 'プライベート',
   },
   {
@@ -106,8 +100,6 @@ export const privateEvents: CalendarEvent[] = [
     description: '新作映画を見る',
     startDate: createDate(2, 19, 0),
     endDate: createDate(2, 21, 0),
-    backgroundColor: '#8b5cf6',
-    borderColor: '#ccc',
     category: 'プライベート',
   },
 ]
@@ -122,8 +114,6 @@ export const healthEvents: CalendarEvent[] = [
     description: 'トレーニング',
     startDate: createDate(1, 18, 0),
     endDate: createDate(1, 19, 30),
-    backgroundColor: '#f59e0b',
-    borderColor: '#ccc',
     category: '健康',
   },
   {
@@ -132,8 +122,6 @@ export const healthEvents: CalendarEvent[] = [
     description: '健康管理',
     startDate: createDate(1, 6, 0),
     endDate: createDate(1, 7, 0),
-    backgroundColor: '#22c55e',
-    borderColor: '#ccc',
     category: '健康',
   },
 ]
@@ -148,8 +136,6 @@ export const overlappingEvents: CalendarEvent[] = [
     description: '重複テスト1',
     startDate: createDate(0, 9, 30),
     endDate: createDate(0, 11, 0),
-    backgroundColor: '#f59e0b',
-    borderColor: '#ccc',
     category: 'テスト',
   },
   {
@@ -158,8 +144,6 @@ export const overlappingEvents: CalendarEvent[] = [
     description: '重複テスト2',
     startDate: createDate(0, 10, 0),
     endDate: createDate(0, 12, 0),
-    backgroundColor: '#8b5cf6',
-    borderColor: '#ccc',
     category: 'テスト',
   },
 ]
@@ -174,8 +158,6 @@ export const allDayEvents: CalendarEvent[] = [
     description: '新年',
     startDate: createDate(0, 0, 0),
     endDate: createDate(0, 23, 59),
-    backgroundColor: '#ef4444',
-    borderColor: '#dc2626',
     category: 'プライベート',
     allDay: true,
   },
@@ -185,8 +167,6 @@ export const allDayEvents: CalendarEvent[] = [
     description: '東京出張',
     startDate: createDate(3, 0, 0),
     endDate: createDate(4, 23, 59),
-    backgroundColor: '#3b82f6',
-    borderColor: '#2563eb',
     category: '仕事',
     allDay: true,
   },
@@ -196,8 +176,6 @@ export const allDayEvents: CalendarEvent[] = [
     description: '有給休暇',
     startDate: createDate(5, 0, 0),
     endDate: createDate(5, 23, 59),
-    backgroundColor: '#10b981',
-    borderColor: '#059669',
     category: 'プライベート',
     allDay: true,
   },

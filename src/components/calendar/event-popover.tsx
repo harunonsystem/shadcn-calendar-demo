@@ -1,9 +1,10 @@
-import { CalendarEvent, Language } from '@/types/calendar'
+import { CalendarEvent, Language, CategoryColor } from '@/types/calendar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { X, Clock, Calendar, MapPin, Trash2, Edit2 } from 'lucide-react'
 import { minutesToTimeString } from '@/lib/utils/time'
 import { getWeekDayName, getTranslation } from '@/lib/i18n'
+import { getEventStyle } from './calendar-utils'
 import { useEffect, useRef, useState } from 'react'
 
 const MAX_TITLE_LENGTH = 30
@@ -16,6 +17,7 @@ interface EventPopoverProps {
   language: Language
   isOpen: boolean
   position: { x: number; y: number }
+  categories?: CategoryColor[]
   onClose: () => void
   onEdit?: (event: CalendarEvent) => void
   onDelete?: (event: CalendarEvent) => void
@@ -27,6 +29,7 @@ export function EventPopover({
   language,
   isOpen,
   position,
+  categories = [],
   onClose,
   onEdit,
   onDelete,
@@ -125,9 +128,7 @@ export function EventPopover({
       <Card className="w-80 shadow-xl border max-h-[80vh] overflow-hidden flex flex-col">
         <div
           className="px-4 py-3 rounded-t-lg flex items-start justify-between flex-shrink-0"
-          style={{
-            backgroundColor: event.backgroundColor || '#3b82f6',
-          }}
+          style={getEventStyle(event, { categoryColors: categories })}
         >
           <div className="flex-1 text-white min-w-0">
             <h3 className="font-semibold text-lg leading-tight truncate" title={event.title}>

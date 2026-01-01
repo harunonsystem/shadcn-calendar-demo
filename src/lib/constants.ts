@@ -41,3 +41,9 @@ export const EVENT_DISPLAY_THRESHOLDS = {
  * リサイズハンドルの閾値
  */
 export const RESIZE_HANDLE_MIN_HEIGHT_PX = 30
+
+/**
+ * デフォルトイベント色
+ */
+export const DEFAULT_EVENT_COLOR = '#3b82f6' // Tailwind blue-500
+export const DEFAULT_BORDER_COLOR = '#3b82f6'

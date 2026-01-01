@@ -1,6 +1,7 @@
 import { CalendarEvent, CalendarConfig, Language } from '@/types/calendar'
 import { getWeekDays } from '@/lib/utils/date'
 import { getTranslation, getWeekDayLabels, getWeekDayName } from '@/lib/i18n'
+import { DEFAULT_EVENT_COLOR, DEFAULT_BORDER_COLOR } from '@/lib/constants'
 
 // Re-export for backward compatibility
 export { getWeekDayLabels, getWeekDayName }
@@ -20,9 +21,9 @@ export const getEventStyle = (event: CalendarEvent, config?: CalendarConfig) => 
 
   // デフォルトのスタイル（イベント個別の色 > デフォルト色）
   return {
-    backgroundColor: event.backgroundColor || event.color || '#3b82f6',
-    borderColor: event.borderColor || event.color || '#3b82f6',
-    border: `1px solid ${event.borderColor || event.color || '#3b82f6'}`,
+    backgroundColor: event.backgroundColor || event.color || DEFAULT_EVENT_COLOR,
+    borderColor: event.borderColor || event.color || DEFAULT_BORDER_COLOR,
+    border: `1px solid ${event.borderColor || event.color || DEFAULT_BORDER_COLOR}`,
   }
 }
 

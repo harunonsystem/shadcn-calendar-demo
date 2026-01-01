@@ -106,6 +106,7 @@ export function TimeGrid({
         dates={dates}
         events={events}
         language={language}
+        categoryColors={config.categoryColors}
         onEventClick={(event, position) => {
           actions.openPopover(event, position)
         }}
@@ -267,6 +268,7 @@ export function TimeGrid({
         language={language}
         isOpen={state.popoverState.isOpen}
         position={state.popoverState.position}
+        categories={config.categoryColors}
         onClose={actions.closePopover}
         onEdit={(event) => {
           actions.closePopover()

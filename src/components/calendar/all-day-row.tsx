@@ -1,5 +1,6 @@
-import { CalendarEvent, Language } from '@/types/calendar'
+import { CalendarEvent, Language, CategoryColor } from '@/types/calendar'
 import { getTranslation } from '@/lib/i18n'
+import { getEventStyle } from './calendar-utils'
 import { useState, useRef } from 'react'
 import { isSameDay } from '@/lib/utils/date'
 import { cn } from '@/lib/utils'
@@ -8,13 +9,21 @@ interface AllDayRowProps {
   dates: Date[]
   events: CalendarEvent[]
   language: Language
+  categoryColors?: CategoryColor[]
   onEventClick?: (event: CalendarEvent, position: { x: number; y: number }) => void
   onEventDrop?: (event: CalendarEvent, newDate: Date) => void
 }
 
 const MAX_VISIBLE_ALLDAY = 3
 
-export function AllDayRow({ dates, events, language, onEventClick, onEventDrop }: AllDayRowProps) {
+export function AllDayRow({
+  dates,
+  events,
+  language,
+  categoryColors = [],
+  onEventClick,
+  onEventDrop,
+}: AllDayRowProps) {
   const t = getTranslation(language)
   const allDayEvents = events.filter((e) => e.allDay)
   const rowRef = useRef<HTMLDivElement>(null)
@@ -137,8 +146,7 @@ export function AllDayRow({ dates, events, language, onEventClick, onEventDrop }
                   <div
                     className="text-xs px-2 py-0.5 rounded truncate opacity-50 border-2 border-dashed"
                     style={{
-                      backgroundColor: dragState.draggedEvent.backgroundColor || '#3b82f6',
-                      borderColor: dragState.draggedEvent.borderColor || '#1d4ed8',
+                      ...getEventStyle(dragState.draggedEvent, { categoryColors }),
                       color: 'white',
                     }}
                   >
@@ -157,7 +165,7 @@ export function AllDayRow({ dates, events, language, onEventClick, onEventDrop }
                       isDragging && 'opacity-50',
                     )}
                     style={{
-                      backgroundColor: event.backgroundColor || '#3b82f6',
+                      ...getEventStyle(event, { categoryColors }),
                       color: 'white',
                     }}
                     onMouseDown={(e) => handleMouseDown(e, event)}

@@ -17,6 +17,7 @@ import { X, Edit2, Save } from 'lucide-react'
 import { getEventStyle } from './calendar-utils'
 import { formatDateTime, calculateDuration } from '@/lib/utils/time'
 import { getTranslation } from '@/lib/i18n'
+import { DEFAULT_EVENT_COLOR, DEFAULT_BORDER_COLOR } from '@/lib/constants'
 import { useState, useEffect, useCallback } from 'react'
 
 interface Category {
@@ -125,6 +126,15 @@ export function EventDetailModal({
   const t = getTranslation(language)
   const labels = t.eventDetailModal
 
+  // categoriesからcategoryColors形式のconfigを構築
+  const configForStyle = {
+    categoryColors: categories.map((c) => ({
+      label: c.category,
+      backgroundColor: c.backgroundColor || DEFAULT_EVENT_COLOR,
+      borderColor: c.borderColor || DEFAULT_BORDER_COLOR,
+    })),
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
@@ -141,7 +151,7 @@ export function EventDetailModal({
                       <Badge
                         variant="secondary"
                         className="text-sm"
-                        style={getEventStyle(currentEvent)}
+                        style={getEventStyle(currentEvent, configForStyle)}
                       >
                         <div className="text-white font-medium">{currentEvent.category}</div>
                       </Badge>
