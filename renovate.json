@@ -1,0 +1,35 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests",
+    ":semanticCommits"
+  ],
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "groupName": "React",
+      "matchPackageNames": ["react", "react-dom", "@types/react", "@types/react-dom"]
+    },
+    {
+      "groupName": "Storybook",
+      "matchPackagePatterns": ["^@storybook/", "^storybook"]
+    },
+    {
+      "groupName": "Radix UI",
+      "matchPackagePatterns": ["^@radix-ui/"]
+    },
+    {
+      "groupName": "Testing",
+      "matchPackagePatterns": ["^@testing-library/", "^vitest"]
+    },
+    {
+      "groupName": "Linting & Formatting",
+      "matchPackageNames": ["oxlint", "oxfmt", "eslint", "prettier"]
+    }
+  ],
+  "schedule": ["on saturday"],
+  "automerge": true,
+  "automergeType": "pr",
+  "platformAutomerge": true
+}

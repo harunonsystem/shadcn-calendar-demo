@@ -25,3 +25,6 @@ dist-ssr
 
 # local planning file
 todo*
+
+*storybook.log
+storybook-static
