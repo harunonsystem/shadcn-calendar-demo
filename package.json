@@ -15,7 +15,8 @@
     "test:ui": "vitest --ui",
     "ci": "bun run lint && bun run fmt:check && bun run typecheck && bun run test",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "deploy:storybook": "bun run build-storybook && wrangler deploy --config wrangler.storybook.jsonc"
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.8",
