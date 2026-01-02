@@ -1,37 +1,24 @@
-import { CalendarEvent, Language } from '@/types/calendar'
+import { CalendarEvent, Language, CategoryColor } from '@/types/calendar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { DateTimePicker } from '@/components/datepicker'
 import { X, Edit2, Save } from 'lucide-react'
 import { getEventStyle } from './calendar-utils'
 import { formatDateTime, calculateDuration } from '@/lib/utils/time'
 import { getTranslation } from '@/lib/i18n'
+import { CategorySelect } from './category-select'
 import { DEFAULT_EVENT_COLOR, DEFAULT_BORDER_COLOR } from '@/lib/constants'
 import { useState, useEffect, useCallback } from 'react'
-
-interface Category {
-  category: string
-  label: string
-  backgroundColor?: string
-  borderColor?: string
-}
 
 interface EventDetailModalProps {
   event: CalendarEvent | null
   language: Language
   isOpen: boolean
-  categories?: Category[]
+  categories?: CategoryColor[]
   initialEditMode?: boolean
   onClose: () => void
   onEdit?: (event: CalendarEvent) => void
@@ -79,7 +66,6 @@ export function EventDetailModal({
     },
     [isEditMode, onClose],
   )
-
   useEffect(() => {
     if (!isOpen) return
     document.addEventListener('keydown', handleEscKey)
@@ -129,7 +115,7 @@ export function EventDetailModal({
   // categoriesからcategoryColors形式のconfigを構築
   const configForStyle = {
     categoryColors: categories.map((c) => ({
-      label: c.category,
+      label: c.category || c.label,
       backgroundColor: c.backgroundColor || DEFAULT_EVENT_COLOR,
       borderColor: c.borderColor || DEFAULT_BORDER_COLOR,
     })),
@@ -241,48 +227,19 @@ export function EventDetailModal({
           )}
 
           {/* Category */}
-          <div className="space-y-2">
-            {isEditMode ? (
-              <>
-                <Label>{t.addEventModal.category}</Label>
-                {categories.length > 0 ? (
-                  <Select value={currentEvent.category || ''} onValueChange={handleCategoryChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={t.addEventModal.categoryPlaceholder} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat.category} value={cat.category}>
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: cat.backgroundColor }}
-                            />
-                            {cat.label}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Input
-                    value={currentEvent.category || ''}
-                    onChange={(e) =>
-                      setEditedEvent((prev) =>
-                        prev ? { ...prev, category: e.target.value } : null,
-                      )
-                    }
-                    placeholder={t.addEventModal.categoryPlaceholder}
-                  />
-                )}
-              </>
-            ) : currentEvent.category ? (
-              <>
-                <div className="text-sm font-medium">{t.addEventModal.category}</div>
-                <div className="text-sm text-muted-foreground">{currentEvent.category}</div>
-              </>
-            ) : null}
-          </div>
+          {isEditMode ? (
+            <CategorySelect
+              value={currentEvent.category || ''}
+              categories={categories}
+              language={language}
+              onChange={handleCategoryChange}
+            />
+          ) : currentEvent.category ? (
+            <div className="space-y-2">
+              <div className="text-sm font-medium">{t.addEventModal.category}</div>
+              <div className="text-sm text-muted-foreground">{currentEvent.category}</div>
+            </div>
+          ) : null}
 
           {/* Description */}
           <div className="space-y-2">

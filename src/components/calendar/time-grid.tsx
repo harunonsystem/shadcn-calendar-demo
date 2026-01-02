@@ -247,6 +247,7 @@ export function TimeGrid({
         isOpen={state.showResizeModal}
         newStartTime={state.pendingResize?.newStartTime || 0}
         newEndTime={state.pendingResize?.newEndTime || 0}
+        categoryColors={config.categoryColors}
         onConfirm={modalHandlers.handleResizeConfirm}
         onCancel={modalHandlers.handleResizeCancel}
       />
@@ -258,6 +259,7 @@ export function TimeGrid({
         isOpen={state.showDragModal}
         newDate={state.pendingDrag?.newDate || null}
         newStartMinutes={state.pendingDrag?.newStartMinutes || 0}
+        categoryColors={config.categoryColors}
         onConfirm={modalHandlers.handleDragConfirm}
         onCancel={modalHandlers.handleDragCancel}
       />

@@ -115,6 +115,31 @@ function App() {
     )
   }
 
+  const handleEventCategoryChange = (event: CalendarEvent, newCategory: string) => {
+    console.log('Event category changed:', {
+      event: event.title,
+      oldCategory: event.category,
+      newCategory,
+    })
+
+    // カテゴリに対応する色を取得
+    const categoryColor = categoryColors.find((c) => c.category === newCategory)
+
+    setEvents((prevEvents) =>
+      prevEvents.map((e) => {
+        if (e.id === event.id) {
+          return {
+            ...e,
+            category: newCategory,
+            backgroundColor: categoryColor?.backgroundColor,
+            borderColor: categoryColor?.borderColor,
+          }
+        }
+        return e
+      }),
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="container mx-auto max-w-6xl">
@@ -129,6 +154,7 @@ function App() {
           onCreateEvent={handleCreateEvent}
           onEventDrop={handleEventDrop}
           onEventResize={handleEventResize}
+          onEventCategoryChange={handleEventCategoryChange}
         />
       </div>
 

@@ -27,6 +27,7 @@ interface CalendarProps {
   onCreateEvent?: () => void
   onEventDrop?: (event: CalendarEvent, newDate: Date, newStartTime: number) => void
   onEventResize?: (event: CalendarEvent, newStartTime: number, newEndTime: number) => void
+  onEventCategoryChange?: (event: CalendarEvent, newCategory: string) => void
 }
 
 // nuqs parsers for URL state
@@ -43,6 +44,7 @@ export function Calendar({
   onCreateEvent,
   onEventDrop,
   onEventResize,
+  onEventCategoryChange,
 }: CalendarProps) {
   // Jotai atoms
   const [currentDate, setCurrentDate] = useAtom(currentDateAtom)
@@ -168,7 +170,7 @@ export function Calendar({
       case 'day':
         return <DayView {...commonProps} />
       case 'category':
-        return <CategoryView {...commonProps} />
+        return <CategoryView {...commonProps} onEventCategoryChange={onEventCategoryChange} />
       default:
         return <MonthView {...commonProps} onDateClick={handleDateClick} />
     }

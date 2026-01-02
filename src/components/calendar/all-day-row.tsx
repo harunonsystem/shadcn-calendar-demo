@@ -1,9 +1,10 @@
 import { CalendarEvent, Language, CategoryColor } from '@/types/calendar'
 import { getTranslation } from '@/lib/i18n'
 import { getEventStyle } from './calendar-utils'
-import { useState, useRef } from 'react'
+import { useRef } from 'react'
 import { isSameDay } from '@/lib/utils/date'
 import { cn } from '@/lib/utils'
+import { useAllDayRowInteraction } from '@/lib/hooks/use-all-day-row-interaction'
 
 interface AllDayRowProps {
   dates: Date[]
@@ -28,80 +29,26 @@ export function AllDayRow({
   const allDayEvents = events.filter((e) => e.allDay)
   const rowRef = useRef<HTMLDivElement>(null)
 
-  // ドラッグ状態
-  const [dragState, setDragState] = useState<{
-    isDragging: boolean
-    draggedEvent: CalendarEvent | null
-    targetColumnIndex: number | null
-  }>({
-    isDragging: false,
-    draggedEvent: null,
-    targetColumnIndex: null,
+  // カスタムフックでドラッグ操作を管理
+  const { state, handlers, actions } = useAllDayRowInteraction({
+    dates,
+    rowRef,
+    onEventDrop,
   })
+
+  const { dragState } = state
+  const { handleMouseDown } = handlers
+  const { isInteracting } = actions
 
   if (allDayEvents.length === 0) return null
 
   const handleEventClick = (e: React.MouseEvent, event: CalendarEvent) => {
-    // ドラッグ中はクリックを無視
-    if (dragState.isDragging) return
+    // ドラッグ中・ドラッグ終了直後はクリックを無視
+    if (isInteracting()) return
 
     e.stopPropagation()
     const rect = e.currentTarget.getBoundingClientRect()
     onEventClick?.(event, { x: rect.right + 8, y: rect.top })
-  }
-
-  const handleMouseDown = (e: React.MouseEvent, event: CalendarEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-
-    setDragState({
-      isDragging: true,
-      draggedEvent: event,
-      targetColumnIndex: null,
-    })
-
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      if (!rowRef.current) return
-
-      const rect = rowRef.current.getBoundingClientRect()
-      const columnWidth = rect.width / dates.length
-      const x = moveEvent.clientX - rect.left
-      const columnIndex = Math.floor(x / columnWidth)
-      const clampedIndex = Math.max(0, Math.min(columnIndex, dates.length - 1))
-
-      setDragState((prev) => ({
-        ...prev,
-        targetColumnIndex: clampedIndex,
-      }))
-    }
-
-    const handleMouseUp = (upEvent: MouseEvent) => {
-      if (!rowRef.current) {
-        window.removeEventListener('mousemove', handleMouseMove)
-        window.removeEventListener('mouseup', handleMouseUp)
-        setDragState({ isDragging: false, draggedEvent: null, targetColumnIndex: null })
-        return
-      }
-
-      const rect = rowRef.current.getBoundingClientRect()
-      const columnWidth = rect.width / dates.length
-      const x = upEvent.clientX - rect.left
-      const columnIndex = Math.floor(x / columnWidth)
-      const clampedIndex = Math.max(0, Math.min(columnIndex, dates.length - 1))
-      const newDate = dates[clampedIndex]
-
-      // 元の日付と異なる場合のみドロップ
-      if (newDate && !isSameDay(new Date(event.startDate), newDate)) {
-        onEventDrop?.(event, newDate)
-      }
-
-      window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('mouseup', handleMouseUp)
-      setDragState({ isDragging: false, draggedEvent: null, targetColumnIndex: null })
-    }
-
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('mouseup', handleMouseUp)
   }
 
   return (
@@ -118,13 +65,11 @@ export function AllDayRow({
           const dayAllDayEvents = allDayEvents.filter((event) => {
             const eventStart = new Date(event.startDate)
             const eventEnd = new Date(event.endDate)
-            const dateStart = new Date(date)
-            dateStart.setHours(0, 0, 0, 0)
-            const eventStartNormalized = new Date(eventStart)
-            eventStartNormalized.setHours(0, 0, 0, 0)
-            const eventEndNormalized = new Date(eventEnd)
-            eventEndNormalized.setHours(23, 59, 59, 999)
-            return dateStart >= eventStartNormalized && dateStart <= eventEndNormalized
+            return (
+              isSameDay(date, eventStart) ||
+              isSameDay(date, eventEnd) ||
+              (date > eventStart && date < eventEnd)
+            )
           })
 
           const visibleEvents = dayAllDayEvents.slice(0, MAX_VISIBLE_ALLDAY)

@@ -20,7 +20,8 @@ export interface CalendarEvent {
 
 // カテゴリ別の色設定
 export interface CategoryColor {
-  label: string // カテゴリ名
+  category?: string // カテゴリキー（labelと同じ場合は省略可能）
+  label: string // カテゴリ名（表示用）
   borderColor: string // 枠線の色
   backgroundColor: string // 背景色
 }

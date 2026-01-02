@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { useAtomValue } from 'jotai'
 import { CalendarEvent, CalendarConfig, Language } from '@/types/calendar'
 import { TimeGrid } from './time-grid'
+import { EventCategoryChangeModal } from './event-category-change-modal'
 import { currentDateAtom, eventsAtom, configAtom } from '@/lib/atoms'
 import { getUniqueCategories } from '@/lib/utils/event'
 import { getTranslation } from '@/lib/i18n'
@@ -12,8 +14,10 @@ interface CategoryViewProps {
   language: Language
   onEventClick?: (event: CalendarEvent) => void
   onEventEdit?: (event: CalendarEvent) => void
-  onEventDrop?: (event: CalendarEvent, newDate: Date, newStartTime: number) => void
+  // Note: onEventDropはCategoryViewでは使用しない（代わりにカテゴリ変更として処理）
+  _onEventDrop?: (event: CalendarEvent, newDate: Date, newStartTime: number) => void
   onEventResize?: (event: CalendarEvent, newStartTime: number, newEndTime: number) => void
+  onEventCategoryChange?: (event: CalendarEvent, newCategory: string) => void
 }
 
 export function CategoryView({
@@ -23,8 +27,9 @@ export function CategoryView({
   language,
   onEventClick,
   onEventEdit,
-  onEventDrop,
+  _onEventDrop,
   onEventResize,
+  onEventCategoryChange,
 }: CategoryViewProps) {
   // Jotai atomsからデフォルト値を取得、propsがあればそちらを優先
   const atomCurrentDate = useAtomValue(currentDateAtom)
@@ -35,6 +40,13 @@ export function CategoryView({
   const events = propEvents ?? atomEvents
   const config = propConfig ?? atomConfig
 
+  // カテゴリ変更確認モーダルの状態
+  const [showCategoryModal, setShowCategoryModal] = useState(false)
+  const [pendingCategoryChange, setPendingCategoryChange] = useState<{
+    event: CalendarEvent
+    newCategory: string
+  } | null>(null)
+
   // 共通関数でカテゴリ一覧を取得
   const categories = getUniqueCategories(events)
 
@@ -44,6 +56,23 @@ export function CategoryView({
     date.setDate(date.getDate() + index * 1000) // 識別用に異なる日付を設定
     return date
   })
+
+  // 仮想日付からカテゴリを逆引きする関数
+  const getCategoryFromDate = (date: Date): string | null => {
+    // categoryDatesの中から一致する日付を探す
+    const index = categoryDates.findIndex(
+      (categoryDate) => categoryDate.getTime() === date.getTime(),
+    )
+    if (index >= 0 && index < categories.length) {
+      return categories[index]
+    }
+    return null
+  }
+
+  // 元のイベントを取得する関数
+  const getOriginalEvent = (mappedEvent: CalendarEvent): CalendarEvent | null => {
+    return events.find((e) => e.id === mappedEvent.id) || null
+  }
 
   // カテゴリごとにイベントをフィルタリングして、対応する仮想日付に割り当て
   const mappedEvents = events.map((event) => {
@@ -69,6 +98,34 @@ export function CategoryView({
       ),
     }
   })
+
+  // TimeGridからのドロップをカテゴリ変更として処理
+  const handleEventDrop = (event: CalendarEvent, newDate: Date, _newStartTime: number) => {
+    const newCategory = getCategoryFromDate(newDate)
+    const originalEvent = getOriginalEvent(event)
+
+    if (!newCategory || !originalEvent) return
+
+    // 同じカテゴリへのドロップは無視
+    if (originalEvent.category === newCategory) return
+
+    // 確認モーダルを表示
+    setPendingCategoryChange({ event: originalEvent, newCategory })
+    setShowCategoryModal(true)
+  }
+
+  const handleCategoryConfirm = () => {
+    if (pendingCategoryChange) {
+      onEventCategoryChange?.(pendingCategoryChange.event, pendingCategoryChange.newCategory)
+    }
+    setShowCategoryModal(false)
+    setPendingCategoryChange(null)
+  }
+
+  const handleCategoryCancel = () => {
+    setShowCategoryModal(false)
+    setPendingCategoryChange(null)
+  }
 
   if (categories.length === 0) {
     const t = getTranslation(language)
@@ -102,9 +159,20 @@ export function CategoryView({
         language={language}
         onEventClick={onEventClick}
         onEventEdit={onEventEdit}
-        onEventDrop={onEventDrop}
+        onEventDrop={handleEventDrop}
         onEventResize={onEventResize}
         showDayHeaders={false}
+      />
+
+      {/* カテゴリ変更確認モーダル */}
+      <EventCategoryChangeModal
+        event={pendingCategoryChange?.event || null}
+        language={language}
+        isOpen={showCategoryModal}
+        newCategory={pendingCategoryChange?.newCategory || ''}
+        categoryColors={config.categoryColors}
+        onConfirm={handleCategoryConfirm}
+        onCancel={handleCategoryCancel}
       />
     </div>
   )

@@ -1,34 +1,21 @@
 import { useState, useEffect, useCallback } from 'react'
-import { CalendarEvent, Language } from '@/types/calendar'
+import { CalendarEvent, Language, CategoryColor } from '@/types/calendar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { X, Plus } from 'lucide-react'
 import { DateTimePicker } from '@/components/datepicker'
+import { CategorySelect } from './category-select'
 import { getTranslation } from '@/lib/i18n'
-
-interface Category {
-  category: string
-  label: string
-  backgroundColor?: string
-  borderColor?: string
-}
 
 interface AddEventModalProps {
   language: Language
   isOpen: boolean
   initialDate?: Date
   initialStartMinutes?: number
-  categories?: Category[]
+  categories?: CategoryColor[]
   onClose: () => void
   onCreate: (event: Omit<CalendarEvent, 'id'>) => void
 }
@@ -190,35 +177,12 @@ export function AddEventModal({
           />
 
           {/* Category Select */}
-          <div className="space-y-2">
-            <Label>{labels.category}</Label>
-            {categories.length > 0 ? (
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger>
-                  <SelectValue placeholder={labels.categoryPlaceholder} />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.category} value={cat.category}>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: cat.backgroundColor }}
-                        />
-                        {cat.label}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <Input
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder={labels.categoryPlaceholder}
-              />
-            )}
-          </div>
+          <CategorySelect
+            value={category}
+            categories={categories}
+            language={language}
+            onChange={setCategory}
+          />
 
           {/* Description Textarea */}
           <div className="space-y-2">
