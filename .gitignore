@@ -26,5 +26,5 @@ dist-ssr
 # local planning file
 todo*
 
-#wip
-# src/components/datepicker/
+*storybook.log
+storybook-static
