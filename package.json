@@ -40,7 +40,7 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.5.2",
     "@vitest/ui": "^4.0.16",
-    "jsdom": "^27.4.0",
+    "happy-dom": "^20.0.11",
     "oxfmt": "^0.21.0",
     "oxlint": "^0.17.0",
     "tailwindcss": "^4.1.8",
