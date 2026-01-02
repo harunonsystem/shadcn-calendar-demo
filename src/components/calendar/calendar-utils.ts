@@ -49,13 +49,14 @@ export const getTitle = (viewMode: string, currentDate: Date, language: Language
     const start = weekDays[0]
     const end = weekDays[6]
     return `${start.getMonth() + 1}/${start.getDate()} - ${end.getMonth() + 1}/${end.getDate()}`
-  } else if (viewMode === 'day') {
+  } else if (viewMode === 'day' || viewMode === 'category') {
+    // day と category は同じ日付表示
     return currentDate.toLocaleDateString(t.locale, {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     })
   } else {
-    return t.viewModes.category
+    return ''
   }
 }

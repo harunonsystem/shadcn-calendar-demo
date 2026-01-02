@@ -5,7 +5,6 @@ import { TimeGrid } from '../time-grid'
 import { EventCategoryChangeModal } from '../event-category-change-modal'
 import { currentDateAtom, eventsAtom, configAtom } from '@/lib/atoms'
 import { getUniqueCategories } from '@/lib/utils/event'
-import { getTranslation } from '@/lib/i18n'
 
 interface CategoryViewProps {
   currentDate?: Date
@@ -14,8 +13,6 @@ interface CategoryViewProps {
   language: Language
   onEventClick?: (event: CalendarEvent) => void
   onEventEdit?: (event: CalendarEvent) => void
-  // Note: onEventDropはCategoryViewでは使用しない（代わりにカテゴリ変更として処理）
-  _onEventDrop?: (event: CalendarEvent, newDate: Date, newStartTime: number) => void
   onEventResize?: (event: CalendarEvent, newStartTime: number, newEndTime: number) => void
   onEventCategoryChange?: (event: CalendarEvent, newCategory: string) => void
 }
@@ -27,7 +24,6 @@ export function CategoryView({
   language,
   onEventClick,
   onEventEdit,
-  _onEventDrop,
   onEventResize,
   onEventCategoryChange,
 }: CategoryViewProps) {
@@ -47,21 +43,46 @@ export function CategoryView({
     newCategory: string
   } | null>(null)
 
-  // 共通関数でカテゴリ一覧を取得
+  // 全イベントからカテゴリ一覧を取得（当日に限らず全カテゴリを表示）
   const categories = getUniqueCategories(events)
 
-  // カテゴリごとに仮想的な「日付」を作成（同じ日付だが列として分ける）
+  // カテゴリがない場合は何も表示しない
+  if (categories.length === 0) {
+    return <div className="h-[600px]" />
+  }
+
+  // 当日のイベントのみをフィルタリング
+  const todayEvents = events.filter((event) => {
+    const eventDate = new Date(event.startDate)
+    return (
+      eventDate.getFullYear() === currentDate.getFullYear() &&
+      eventDate.getMonth() === currentDate.getMonth() &&
+      eventDate.getDate() === currentDate.getDate()
+    )
+  })
+
+  // カテゴリごとに仮想的な「日付」を作成（TimeGridの列として使用）
   const categoryDates = categories.map((_, index) => {
     const date = new Date(currentDate)
-    date.setDate(date.getDate() + index * 1000) // 識別用に異なる日付を設定
+    date.setFullYear(2000 + index) // 識別用に異なる年を設定
     return date
   })
 
+  // カテゴリ名をヘッダーに表示するためのマッピング
+  const categoryHeaders = categories.reduce(
+    (acc, category, index) => {
+      const date = categoryDates[index]
+      const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
+      acc[key] = category
+      return acc
+    },
+    {} as Record<string, string>,
+  )
+
   // 仮想日付からカテゴリを逆引きする関数
   const getCategoryFromDate = (date: Date): string | null => {
-    // categoryDatesの中から一致する日付を探す
     const index = categoryDates.findIndex(
-      (categoryDate) => categoryDate.getTime() === date.getTime(),
+      (categoryDate) => categoryDate.getFullYear() === date.getFullYear(),
     )
     if (index >= 0 && index < categories.length) {
       return categories[index]
@@ -74,8 +95,8 @@ export function CategoryView({
     return events.find((e) => e.id === mappedEvent.id) || null
   }
 
-  // カテゴリごとにイベントをフィルタリングして、対応する仮想日付に割り当て
-  const mappedEvents = events.map((event) => {
+  // 当日のイベントをカテゴリごとの仮想日付にマッピング
+  const mappedEvents = todayEvents.map((event) => {
     const categoryIndex = categories.indexOf(event.category || '')
     if (categoryIndex === -1) return event
 
@@ -127,31 +148,14 @@ export function CategoryView({
     setPendingCategoryChange(null)
   }
 
-  if (categories.length === 0) {
-    const t = getTranslation(language)
-    return (
-      <div className="flex items-center justify-center h-[600px] text-muted-foreground">
-        {t.noEventsWithCategory}
-      </div>
-    )
+  // カスタムヘッダーフォーマット関数（日付→カテゴリ名）
+  const formatCategoryHeader = (date: Date) => {
+    const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
+    return categoryHeaders[key] || ''
   }
 
   return (
     <div className="h-[600px]">
-      {/* カテゴリヘッダー */}
-      <div
-        className="grid border-b"
-        style={{ gridTemplateColumns: `60px repeat(${categories.length}, 1fr)` }}
-      >
-        <div className="p-2" />
-        {categories.map((category) => (
-          <div key={category} className="p-2 text-center border-r last:border-r-0 font-semibold">
-            {category}
-          </div>
-        ))}
-      </div>
-
-      {/* タイムグリッド */}
       <TimeGrid
         dates={categoryDates}
         events={mappedEvents}
@@ -161,7 +165,8 @@ export function CategoryView({
         onEventEdit={onEventEdit}
         onEventDrop={handleEventDrop}
         onEventResize={onEventResize}
-        showDayHeaders={false}
+        showDayHeaders={true}
+        customHeaderFormat={formatCategoryHeader}
       />
 
       {/* カテゴリ変更確認モーダル */}

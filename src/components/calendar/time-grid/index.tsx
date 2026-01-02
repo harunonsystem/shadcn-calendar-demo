@@ -29,6 +29,7 @@ interface TimeGridProps {
   onEventDrop?: (event: CalendarEvent, newDate: Date, newStartTime: number) => void
   onEventResize?: (event: CalendarEvent, newStartTime: number, newEndTime: number) => void
   showDayHeaders?: boolean
+  customHeaderFormat?: (date: Date) => string
 }
 
 export function TimeGrid({
@@ -43,6 +44,7 @@ export function TimeGrid({
   onEventDrop,
   onEventResize,
   showDayHeaders = true,
+  customHeaderFormat,
 }: TimeGridProps) {
   const gridRef = useRef<HTMLDivElement>(null)
 
@@ -85,18 +87,34 @@ export function TimeGrid({
             className="grid gap-0"
             style={{ gridTemplateColumns: `repeat(${dates.length}, 1fr)` }}
           >
-            {dates.map((date) => (
-              <div
-                key={date.toISOString()}
-                className="p-2 text-center border-r last:border-r-0 cursor-pointer hover:bg-accent"
-                onClick={() => onDateClick?.(date)}
-              >
-                <div className="text-sm font-semibold">
-                  {weekDays[date.getDay() === 0 ? 6 : date.getDay() - 1]}
+            {dates.map((date) => {
+              // カスタムヘッダーがある場合はカテゴリ名などを表示
+              if (customHeaderFormat) {
+                return (
+                  <div
+                    key={date.toISOString()}
+                    className="p-2 text-center border-r last:border-r-0"
+                  >
+                    <div className="text-sm font-semibold">
+                      {customHeaderFormat(date)}
+                    </div>
+                  </div>
+                )
+              }
+              // デフォルト: 曜日と日付を表示
+              return (
+                <div
+                  key={date.toISOString()}
+                  className="p-2 text-center border-r last:border-r-0 cursor-pointer hover:bg-accent"
+                  onClick={() => onDateClick?.(date)}
+                >
+                  <div className="text-sm font-semibold">
+                    {weekDays[date.getDay() === 0 ? 6 : date.getDay() - 1]}
+                  </div>
+                  <div className="text-lg font-bold">{date.getDate()}</div>
                 </div>
-                <div className="text-lg font-bold">{date.getDate()}</div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
