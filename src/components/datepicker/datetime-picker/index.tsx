@@ -135,7 +135,7 @@ export function DateTimePicker({
               onSelect={handleDateSelect}
               locale={locale}
               weekStartsOn={weekStartsOn}
-              initialFocus
+              autoFocus
             />
 
             {/* Time Input */}
