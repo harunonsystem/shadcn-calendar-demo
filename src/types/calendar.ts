@@ -26,6 +26,24 @@ export interface CategoryColor {
   backgroundColor: string // 背景色
 }
 
+export type AvailabilityState = 'available' | 'tentative' | 'unavailable' | 'preferred'
+
+export interface AvailabilityRange {
+  id: string
+  resourceIds: string[]
+  start: Date
+  end: Date
+  state: AvailabilityState
+  label?: string
+  reason?: string
+}
+
+export interface AvailabilityWindow {
+  resourceIds: string[]
+  start: Date
+  end: Date
+}
+
 export interface CalendarConfig {
   showNowIndicator?: boolean
   nowIndicatorColor?: string // Now Indicatorの色
