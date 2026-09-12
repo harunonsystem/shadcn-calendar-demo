@@ -26,7 +26,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "jotai": "^2.12.3",
+    "jotai": "^3.0.0",
     "lucide-react": "^1.0.0",
     "nuqs": "^2.8.6",
     "react": "^19.0.0",
