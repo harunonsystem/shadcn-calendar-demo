@@ -79,7 +79,7 @@ const meta: Meta<typeof Component> = {
 ```typescript
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import type React from 'react'
-import { fn } from '@storybook/test'
+import { fn } from 'storybook/test'
 import { ComponentName } from './index'
 
 // モックデータ定義
