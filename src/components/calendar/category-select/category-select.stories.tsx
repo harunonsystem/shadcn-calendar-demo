@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import type React from 'react'
-import { fn } from '@storybook/test'
+import { fn } from 'storybook/test'
 import { CategorySelect } from './index'
 import { CategoryColor } from '@/types/calendar'
 

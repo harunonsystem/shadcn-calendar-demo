@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import type React from 'react'
 import { EventPopover } from './index'
 import { CalendarEvent, CategoryColor } from '@/types/calendar'
-import { fn } from '@storybook/test'
+import { fn } from 'storybook/test'
 
 const baseEvent: CalendarEvent = {
   id: '1',
