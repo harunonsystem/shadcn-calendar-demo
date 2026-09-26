@@ -24,6 +24,12 @@ export default defineConfig({
       reporter: ['text', 'html']
     },
     projects: [{
+      // Unit tests in src/**/*.test.ts(x) run in a Node project
+      extends: true,
+      test: {
+        name: 'unit'
+      }
+    }, {
       extends: true,
       plugins: [
       // The plugin will run tests for the stories defined in your Storybook config

@@ -95,9 +95,7 @@ export function TimeGrid({
                     key={date.toISOString()}
                     className="p-2 text-center border-r last:border-r-0"
                   >
-                    <div className="text-sm font-semibold">
-                      {customHeaderFormat(date)}
-                    </div>
+                    <div className="text-sm font-semibold">{customHeaderFormat(date)}</div>
                   </div>
                 )
               }
