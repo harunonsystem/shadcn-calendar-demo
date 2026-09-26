@@ -24,6 +24,10 @@
       "matchPackagePatterns": ["^@testing-library/", "^vitest"]
     },
     {
+      "matchPackagePatterns": ["^@vitest/", "^vitest$"],
+      "allowedVersions": "<5"
+    },
+    {
       "groupName": "Linting & Formatting",
       "matchPackageNames": ["oxlint", "oxfmt", "eslint", "prettier"]
     }
