@@ -25,6 +25,8 @@ dist-ssr
 
 # local planning file
 todo*
+docs/product-direction.md
+docs/implementation-gap.md
 
 *storybook.log
 storybook-static
